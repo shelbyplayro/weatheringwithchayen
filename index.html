@@ -467,7 +467,7 @@ if (typeof window !== 'undefined') (() => {
         back = sun(184, 70, 12) + `<path d="M22 60 q6 -6 0 -12 q-6 -6 0 -12" stroke="#ffb000" stroke-width="3" fill="none" stroke-linecap="round" opacity=".7"/>`; break;
       case 'cloud':
         eyes = roundEyes(94); mouth = `<ellipse cx="100" cy="139" rx="4.5" ry="5.5" ${S('var(--ink)')}/>`;
-        back = `<path ${o} ${S('var(--surface)')} d="M2 84 a11 11 0 0 1 3-21 a15 15 0 0 1 28-5 a12 12 0 0 1 8 26 Z"/>` +
+        back = `<path ${o} ${S('var(--lo)')} d="M2 84 a11 11 0 0 1 3-21 a15 15 0 0 1 28-5 a12 12 0 0 1 8 26 Z"/>` +
           `<text x="174" y="88" font-size="38" font-weight="700" font-family="Mitr,sans-serif" ${S('var(--tea)')}>?</text>`; break;
       case 'sniff':
         eyes = `<path class="ink" d="M72 97 Q80 92 88 97"/><path class="ink" d="M112 97 Q120 92 128 97"/>`;
@@ -502,7 +502,7 @@ if (typeof window !== 'undefined') (() => {
       ${back}
       <ellipse ${o} cx="100" cy="190" rx="50" ry="26" ${S(fur)}/>
       <g transform="rotate(${tilt} 100 150)">
-      <path ${o} ${S('var(--ear)')} d="M54 84 C44 60 38 30 46 20 C54 16 74 32 94 56 Z"/>
+      <path ${o} ${S('var(--ear)')} d="M54 84 C47 70 43 60 43 55 L51 49 L42 43 C40 34 41 25 46 20 C54 16 74 32 94 56 Z"/>
       <path ${S('var(--blush)')} opacity=".5" d="M59 72 C54 54 51 38 55 31 C62 33 74 44 84 56 Z"/>
       <path ${o} ${S('var(--ear)')} d="M146 84 C156 60 162 30 154 20 C146 16 126 32 106 56 Z"/>
       <path ${S('var(--blush)')} opacity=".5" d="M141 72 C146 54 149 38 145 31 C138 33 126 44 116 56 Z"/>
@@ -510,9 +510,10 @@ if (typeof window !== 'undefined') (() => {
       <ellipse cx="125" cy="92" rx="17" ry="14" ${S('var(--ear)')} opacity=".45"/>
       ${onHead}
       <ellipse ${o} cx="100" cy="129" rx="28" ry="21" ${S('var(--muzzle)')}/>
+      <path d="M76 124 Q76 108 100 107 Q124 108 124 124 Q112 131 100 130 Q88 131 76 124 Z" style="fill:#3a2f2b"/>
       ${eyes}
-      <path ${S('var(--ink)')} d="M90 117 Q100 111 110 117 Q107 126 100 127 Q93 126 90 117 Z"/>
-      ${mouth}
+      <path style="fill:#141010;stroke:#5a4a44;stroke-width:1.5" d="M90 117 Q100 111 110 117 Q107 126 100 127 Q93 126 90 117 Z"/><ellipse cx="95.5" cy="116" rx="3.6" ry="1.8" style="fill:#fff" opacity=".75"/>
+      <g class="mouth">${mouth}</g>
       <ellipse cx="66" cy="119" rx="8" ry="4.5" ${S('var(--blush)')} opacity=".55"/>
       <ellipse cx="134" cy="119" rx="8" ry="4.5" ${S('var(--blush)')} opacity=".55"/>
       </g>
