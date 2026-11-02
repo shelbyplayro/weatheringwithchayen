@@ -414,8 +414,8 @@ if (typeof window !== 'undefined') (() => {
   const DEFAULT_STYLE = 'clean';
   document.documentElement.dataset.style = STYLES.includes(qs.get('style')) ? qs.get('style') : DEFAULT_STYLE;
   const DEMO = qs.get('demo');
-  const LAT = parseFloat(qs.get('lat')) || 9.016269177096914;
-  const LON = parseFloat(qs.get('lon')) || 98.96555947723334;
+  const LAT = parseFloat(qs.get('lat')) || 9.032759575862215;
+  const LON = parseFloat(qs.get('lon')) || 98.94431140668654;
   const $ = id => document.getElementById(id);
   if (qs.get('lat')) $('coords').textContent = `${LAT.toFixed(4)}, ${LON.toFixed(4)}`;
 

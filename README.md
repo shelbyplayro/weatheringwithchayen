@@ -1,6 +1,6 @@
 # ฝนจะตกไหมชาเย็น
 
-หน้าเว็บหน้าเดียวสำหรับดูว่าพิกัดหนึ่งจะมีฝนในอีก 0–4 ชั่วโมงหรือไม่ ค่าเริ่มต้นคือพิกัดสวนที่ อ.คีรีรัฐนิคม จ.สุราษฎร์ธานี (9.016269, 98.965559)
+หน้าเว็บหน้าเดียวสำหรับดูว่าพิกัดหนึ่งจะมีฝนในอีก 0–4 ชั่วโมงหรือไม่ ค่าเริ่มต้นคือพิกัดสวนที่ อ.คีรีรัฐนิคม จ.สุราษฎร์ธานี (9.032760, 98.944311)
 
 ## ข้อมูลที่ใช้
 
@@ -24,12 +24,12 @@
 ต่อท้ายลิงก์ด้วย `?lat=...&lon=...` เช่น
 
 ```
-https://<ชื่อบัญชี>.github.io/chayenweathering/?lat=9.0163&lon=98.9656
+https://shelbyplayro.github.io/weatheringwithchayen/?lat=9.0328&lon=98.9443
 ```
 
 ## เปิดใช้ GitHub Pages
 
-Settings → Pages → Source: Deploy from a branch → Branch: `main` / `(root)` → Save รอสักครู่จะได้ลิงก์ `https://<ชื่อบัญชี>.github.io/chayenweathering/`
+Settings → Pages → Source: Deploy from a branch → Branch: `main` / `(root)` → Save รอสักครู่จะได้ลิงก์ `https://shelbyplayro.github.io/weatheringwithchayen/`
 
 ## เครดิตข้อมูล
 
