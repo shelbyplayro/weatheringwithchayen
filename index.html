@@ -96,11 +96,22 @@ body{margin:0;font:16px/1.55 var(--body)}
   padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:2px}
 :root[data-style="sticker"] .hour{box-shadow:3px 3px 0 var(--outline)}
 :root[data-style="doodle"] .hour{border-color:var(--line);border-radius:18px 8px 16px 10px}
+button.hour{font:inherit;color:inherit;cursor:pointer;transition:transform .15s}
+button.hour:active{transform:scale(.96)}
+button.hour[aria-pressed="true"]{outline:3px solid var(--tea);outline-offset:-1px}
+button.hour:focus-visible{outline:3px solid var(--fg)}
+.quarters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;width:100%;margin-top:8px}
+.quarters .q{background:var(--surface2);border-radius:12px;padding:6px 2px;display:flex;flex-direction:column;align-items:center}
+.quarters .q span{font:400 .7rem var(--mono);color:var(--muted)}
+.quarters .q b{font:600 1rem var(--display)}
+.quarters .q.wet b{color:var(--rain)} .quarters .q.maybe b{color:var(--tea)}
+.backall{margin-top:6px;font:500 .85rem var(--body);color:var(--tea);background:none;border:0;cursor:pointer;padding:8px 10px;min-height:40px;text-decoration:underline;text-underline-offset:3px}
 .hour .t{font:500 .78rem var(--mono);color:var(--muted)}
 .hour .p{font:600 1.15rem var(--display);font-variant-numeric:tabular-nums}
 .hour .ic{width:30px;height:30px}
 .hour.wet .p{color:var(--rain)} .hour.maybe .p{color:var(--tea)}
 
+.tip{margin:-6px 0 0;text-align:center;font-size:.8rem;color:var(--muted)}
 h2{font:600 1rem var(--display);margin:0 0 10px}
 .strip{display:grid;grid-template-columns:repeat(16,1fr);gap:4px;align-items:end;height:90px}
 .bar{border-radius:6px 6px 2px 2px;background:var(--rain);min-height:4px}
@@ -176,12 +187,15 @@ footer a{color:inherit}
     <span class="mood idle" id="mood">กำลังดมกลิ่นฝน…</span>
     <p class="answer" id="verdict">กำลังดึงข้อมูล</p>
     <div class="sub" id="verdictSub"></div>
+    <div class="quarters" id="quarters" hidden></div>
+    <button class="backall" id="backAll" type="button" hidden>ดูภาพรวม 4 ชั่วโมง</button>
     <div class="updated" id="updated"></div>
   </div>
   <div class="warn" id="warn" hidden></div>
   <div class="toast" id="toast" role="status" hidden></div>
 
   <div class="hours" id="hours"></div>
+  <p class="tip" id="tip">แตะแต่ละช่วงเวลาเพื่อดูชาเย็นในชั่วโมงนั้น</p>
 
   <div class="card">
     <h2>ทุก 15 นาที</h2>
@@ -399,56 +413,106 @@ if (typeof window !== 'undefined') (() => {
   if (qs.get('lat')) $('coords').textContent = `${LAT.toFixed(4)}, ${LON.toFixed(4)}`;
 
   /* ---------- mascot ---------- */
-  function dogSVG(mood) {
+  /* poses: index 0 of each mood is the overview look; the rest show up when an hour is tapped */
+  const POSES = {
+    dry: [{ id: 'sun', cap: 'ฟ้าเปิด ออกไปได้' }, { id: 'shades', cap: 'ใส่แว่นกันแดดรอฝน' }, { id: 'nap', cap: 'งีบรอฝนก่อน' }, { id: 'pant', cap: 'แดดร้อน แลบลิ้นแป๊บ' }],
+    maybe: [{ id: 'cloud', cap: 'ลุ้นหน่อย พกร่มไว้' }, { id: 'sniff', cap: 'ฟุดฟิด ได้กลิ่นฝน' }, { id: 'tilt', cap: 'ฝนจะมาไหมน้า' }],
+    wet: [{ id: 'wet', cap: 'ฝนมาแล้ว เย้!' }, { id: 'catch', cap: 'อ้าปากรับน้ำฝน' }, { id: 'shake', cap: 'สะบัดขน ซ่า!' }, { id: 'puddle', cap: 'กระโดดแอ่งน้ำ ตูม!' }],
+    idle: [{ id: 'idle', cap: 'กำลังดมกลิ่นฝน…' }]
+  };
+  function dogSVG(mood, poseIdx = 0) {
     const S = (f) => `style="fill:${f}"`;
     const o = 'class="o"';
+    const list = POSES[mood] || POSES.idle, pose = (list[poseIdx % list.length] || list[0]).id;
     const wet = mood === 'wet';
-    let eyes, mouth, extra = '', back = '';
-    if (mood === 'dry') {
-      eyes = `<path class="ink" d="M71 100 Q80 89 89 100"/><path class="ink" d="M111 100 Q120 89 129 100"/>`;
-      mouth = `<path ${S('#ff7a8a')} d="M94 139 Q100 156 106 139 Z"/><path class="ink" d="M86 134 Q100 149 114 134"/>`;
-      back = `<g><circle ${o} cx="184" cy="70" r="12" ${S('#ffc93c')}/>` +
-        [0,45,90,135,180,225,270,315].map(a => { const r = a * Math.PI / 180, c = Math.cos(r), s = Math.sin(r);
-          return `<line x1="${184 + c * 17}" y1="${70 + s * 17}" x2="${184 + c * 23}" y2="${70 + s * 23}" stroke="#ffb000" stroke-width="4" stroke-linecap="round"/>`; }).join('') + `</g>`;
-    } else if (mood === 'maybe') {
-      eyes = `<circle cx="80" cy="94" r="7.5" ${S('var(--ink)')}/><circle cx="120" cy="94" r="7.5" ${S('var(--ink)')}/>` +
-        `<circle cx="82.5" cy="91" r="2.6" ${S('#fff')}/><circle cx="122.5" cy="91" r="2.6" ${S('#fff')}/>`;
-      mouth = `<ellipse cx="100" cy="139" rx="4.5" ry="5.5" ${S('var(--ink)')}/>`;
-      back = `<path ${o} ${S('var(--surface)')} d="M2 84 a11 11 0 0 1 3-21 a15 15 0 0 1 28-5 a12 12 0 0 1 8 26 Z"/>` +
-        `<text x="174" y="88" font-size="38" font-weight="700" font-family="Mitr,sans-serif" ${S('var(--tea)')}>?</text>`;
-    } else if (wet) {
-      eyes = `<circle cx="80" cy="97" r="8.5" ${S('var(--ink)')}/><circle cx="120" cy="97" r="8.5" ${S('var(--ink)')}/>` +
-        `<circle cx="83" cy="93.5" r="3.2" ${S('#fff')}/><circle cx="123" cy="93.5" r="3.2" ${S('#fff')}/>` +
-        `<circle cx="77.5" cy="100.5" r="1.5" ${S('#fff')}/><circle cx="117.5" cy="100.5" r="1.5" ${S('#fff')}/>`;
-      mouth = `<path ${S('#7a2e35')} d="M85 133 Q100 158 115 133 Q100 139 85 133 Z"/><path ${S('#ff7a8a')} d="M92 143 Q100 156 108 143 Q100 139 92 143 Z"/>`;
-      const drop = (x, y, s = 1, f = 'var(--rain)') => `<path ${S(f)} d="M${x} ${y} q${-6 * s} ${10 * s} 0 ${14 * s} q${6 * s} ${-4 * s} 0 ${-14 * s} Z"/>`;
-      extra = `<path ${o} ${S('var(--dogwet)')} d="M84 60 L90 41 L97 56 L104 39 L110 56 L117 44 L118 62 Z"/>` +
-        `<path d="M70 76 Q79 68 90 70" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round" opacity=".75"/>` +
-        `<path d="M118 66 Q126 66 132 72" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" opacity=".6"/>` +
-        drop(42, 32, .8) + drop(158, 32, .8) + drop(40, 112, .9) + drop(162, 116, .9) + drop(100, 158, .8) +
-        `<g class="drops">` + drop(4, 40) + drop(196, 50) + drop(100, -10) + `</g>`;
-        } else {
-      eyes = `<circle cx="80" cy="98" r="7.5" ${S('var(--ink)')}/><circle cx="120" cy="98" r="7.5" ${S('var(--ink)')}/>` +
-        `<circle cx="82.5" cy="95" r="2.6" ${S('#fff')}/><circle cx="122.5" cy="95" r="2.6" ${S('#fff')}/>`;
-      mouth = `<path class="ink" d="M91 135 Q95.5 140 100 135 Q104.5 140 109 135"/>`;
-    }
     const fur = wet ? 'var(--dogwet)' : 'var(--dog)';
+    const drop = (x, y, s = 1, f = 'var(--rain)') => `<path ${S(f)} d="M${x} ${y} q${-6 * s} ${10 * s} 0 ${14 * s} q${6 * s} ${-4 * s} 0 ${-14 * s} Z"/>`;
+    const sun = (cx, cy, r) => `<g><circle ${o} cx="${cx}" cy="${cy}" r="${r}" ${S('#ffc93c')}/>` +
+      [0, 45, 90, 135, 180, 225, 270, 315].map(a => { const q = a * Math.PI / 180, c = Math.cos(q), s = Math.sin(q);
+        return `<line x1="${cx + c * (r + 5)}" y1="${cy + s * (r + 5)}" x2="${cx + c * (r + 11)}" y2="${cy + s * (r + 11)}" stroke="#ffb000" stroke-width="4" stroke-linecap="round"/>`; }).join('') + `</g>`;
+    const roundEyes = (y = 98, r = 7.5) => `<circle cx="80" cy="${y}" r="${r}" ${S('var(--ink)')}/><circle cx="120" cy="${y}" r="${r}" ${S('var(--ink)')}/>` +
+      `<circle cx="82.5" cy="${y - 3}" r="2.6" ${S('#fff')}/><circle cx="122.5" cy="${y - 3}" r="2.6" ${S('#fff')}/>`;
+    const sparkleEyes = `<circle cx="80" cy="97" r="8.5" ${S('var(--ink)')}/><circle cx="120" cy="97" r="8.5" ${S('var(--ink)')}/>` +
+      `<circle cx="83" cy="93.5" r="3.2" ${S('#fff')}/><circle cx="123" cy="93.5" r="3.2" ${S('#fff')}/>` +
+      `<circle cx="77.5" cy="100.5" r="1.5" ${S('#fff')}/><circle cx="117.5" cy="100.5" r="1.5" ${S('#fff')}/>`;
+    const happyEyes = `<path class="ink" d="M71 100 Q80 89 89 100"/><path class="ink" d="M111 100 Q120 89 129 100"/>`;
+    const smileTongue = `<path ${S('#ff7a8a')} d="M94 139 Q100 156 106 139 Z"/><path class="ink" d="M86 134 Q100 149 114 134"/>`;
+    const openMouth = `<path ${S('#7a2e35')} d="M85 133 Q100 158 115 133 Q100 139 85 133 Z"/><path ${S('#ff7a8a')} d="M92 143 Q100 156 108 143 Q100 139 92 143 Z"/>`;
+    const wetFur = `<path ${o} ${S('var(--dogwet)')} d="M84 60 L90 41 L97 56 L104 39 L110 56 L117 44 L118 62 Z"/>` +
+      `<path d="M70 76 Q79 68 90 70" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round" opacity=".75"/>` +
+      `<path d="M118 66 Q126 66 132 72" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" opacity=".6"/>`;
+    const falling = `<g class="drops">` + drop(4, 40) + drop(196, 50) + drop(100, -10) + `</g>`;
+
+    let eyes = roundEyes(), mouth = `<path class="ink" d="M91 135 Q95.5 140 100 135 Q104.5 140 109 135"/>`, onHead = '', back = '', front = '', tilt = 0;
+    switch (pose) {
+      case 'sun': eyes = happyEyes; mouth = smileTongue; back = sun(184, 70, 12); break;
+      case 'shades':
+        eyes = `<rect x="66" y="88" width="28" height="20" rx="8" ${S('#2b2b3a')}/><rect x="106" y="88" width="28" height="20" rx="8" ${S('#2b2b3a')}/>` +
+          `<path d="M94 95 Q100 91 106 95" stroke="#2b2b3a" stroke-width="3.5" fill="none"/>` +
+          `<path d="M71 93 l7 -2" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".7"/><path d="M111 93 l7 -2" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>`;
+        mouth = `<path class="ink" d="M88 134 Q100 146 114 132"/>`; back = sun(184, 64, 10); tilt = -6; break;
+      case 'nap':
+        eyes = `<path class="ink" d="M71 98 Q80 105 89 98"/><path class="ink" d="M111 98 Q120 105 129 98"/>`;
+        mouth = `<path class="ink" d="M95 137 Q100 140 105 137"/>`;
+        front = `<text x="170" y="86" font-size="22" font-weight="700" font-family="Mitr,sans-serif" ${S('var(--rain)')}>z</text>` +
+          `<text x="184" y="62" font-size="32" font-weight="700" font-family="Mitr,sans-serif" ${S('var(--rain)')}>Z</text>`;
+        tilt = 9; break;
+      case 'pant':
+        eyes = roundEyes(97);
+        mouth = `<path ${S('#7a2e35')} d="M88 133 Q100 150 112 133 Q100 138 88 133 Z"/><path ${o} ${S('#ff7a8a')} d="M93 139 Q92 166 100 168 Q108 166 107 139 Z"/><path d="M100 146 L100 160" stroke="#e05c6e" stroke-width="2" stroke-linecap="round"/>`;
+        back = sun(184, 70, 12) + `<path d="M22 60 q6 -6 0 -12 q-6 -6 0 -12" stroke="#ffb000" stroke-width="3" fill="none" stroke-linecap="round" opacity=".7"/>`; break;
+      case 'cloud':
+        eyes = roundEyes(94); mouth = `<ellipse cx="100" cy="139" rx="4.5" ry="5.5" ${S('var(--ink)')}/>`;
+        back = `<path ${o} ${S('var(--surface)')} d="M2 84 a11 11 0 0 1 3-21 a15 15 0 0 1 28-5 a12 12 0 0 1 8 26 Z"/>` +
+          `<text x="174" y="88" font-size="38" font-weight="700" font-family="Mitr,sans-serif" ${S('var(--tea)')}>?</text>`; break;
+      case 'sniff':
+        eyes = `<path class="ink" d="M72 97 Q80 92 88 97"/><path class="ink" d="M112 97 Q120 92 128 97"/>`;
+        mouth = `<path class="ink" d="M94 137 Q100 141 106 137"/>`;
+        front = [0, 1, 2].map(i => `<path d="M${134 + i * 9} ${128 - i * 6} q5 -4 0 -9" stroke="var(--muted)" stroke-width="3" fill="none" stroke-linecap="round"/>`).join('');
+        back = `<path ${o} ${S('var(--surface)')} d="M146 34 a10 10 0 0 1 3-19 a14 14 0 0 1 26-4 a11 11 0 0 1 7 23 Z"/>` + drop(165, 42, .7);
+        tilt = -10; break;
+      case 'tilt':
+        eyes = roundEyes(97, 8); mouth = `<path class="ink" d="M91 135 Q95.5 140 100 135 Q104.5 140 109 135"/>`;
+        front = `<text x="178" y="100" font-size="30" font-weight="700" font-family="Mitr,sans-serif" ${S('var(--tea)')}>?</text>` +
+          `<text x="16" y="56" font-size="22" font-weight="700" font-family="Mitr,sans-serif" ${S('var(--tea)')} opacity=".6">?</text>`;
+        tilt = 13; break;
+      case 'wet':
+        eyes = sparkleEyes; mouth = openMouth; onHead = wetFur;
+        front = drop(42, 32, .8) + drop(158, 32, .8) + drop(40, 112, .9) + drop(162, 116, .9) + drop(100, 158, .8); back = falling; break;
+      case 'catch':
+        eyes = happyEyes;
+        mouth = `<ellipse cx="100" cy="140" rx="12" ry="13" ${S('#7a2e35')}/><ellipse cx="100" cy="146" rx="8" ry="6" ${S('#ff7a8a')}/>`;
+        onHead = wetFur; back = falling; front = drop(70, 6, .8) + drop(130, 2, .8); tilt = -12; break;
+      case 'shake':
+        eyes = `<path class="ink" d="M72 92 L86 99 L72 106"/><path class="ink" d="M128 92 L114 99 L128 106"/>`;
+        mouth = openMouth; onHead = wetFur;
+        back = [[18, 70], [10, 100], [18, 130], [182, 70], [190, 100], [182, 130]].map(([x, y]) => `<path d="M${x} ${y} q${x < 100 ? -6 : 6} 8 0 16" stroke="var(--muted)" stroke-width="3" fill="none" stroke-linecap="round"/>`).join('') +
+          drop(8, 52, .8) + drop(192, 54, .8) + drop(30, 150, .7) + drop(170, 150, .7) + drop(60, 20, .7) + drop(140, 18, .7);
+        tilt = 7; break;
+      case 'puddle':
+        eyes = sparkleEyes; mouth = smileTongue; onHead = wetFur;
+        front = drop(20, 172, .9) + drop(180, 168, .9) + drop(36, 152, .7) + drop(164, 150, .7);
+        back = falling + `<ellipse cx="100" cy="203" rx="96" ry="13" ${S('var(--rain)')} opacity=".45"/>`; break;
+    }
     return `<svg class="dog" viewBox="-10 -12 220 222" role="img" aria-label="น้องหมาชาเย็น">
       ${back}
       <ellipse ${o} cx="100" cy="190" rx="50" ry="26" ${S(fur)}/>
+      <g transform="rotate(${tilt} 100 150)">
       <path ${o} ${S('var(--ear)')} d="M54 84 C44 60 38 30 46 20 C54 16 74 32 94 56 Z"/>
       <path ${S('var(--blush)')} opacity=".5" d="M59 72 C54 54 51 38 55 31 C62 33 74 44 84 56 Z"/>
       <path ${o} ${S('var(--ear)')} d="M146 84 C156 60 162 30 154 20 C146 16 126 32 106 56 Z"/>
       <path ${S('var(--blush)')} opacity=".5" d="M141 72 C146 54 149 38 145 31 C138 33 126 44 116 56 Z"/>
       <ellipse ${o} cx="100" cy="106" rx="60" ry="54" ${S(fur)}/>
       <ellipse cx="125" cy="92" rx="17" ry="14" ${S('var(--ear)')} opacity=".45"/>
+      ${onHead}
       <ellipse ${o} cx="100" cy="129" rx="28" ry="21" ${S('var(--muzzle)')}/>
       ${eyes}
       <path ${S('var(--ink)')} d="M90 117 Q100 111 110 117 Q107 126 100 127 Q93 126 90 117 Z"/>
       ${mouth}
       <ellipse cx="66" cy="119" rx="8" ry="4.5" ${S('var(--blush)')} opacity=".55"/>
       <ellipse cx="134" cy="119" rx="8" ry="4.5" ${S('var(--blush)')} opacity=".55"/>
-      ${extra}
+      </g>
+      ${front}
     </svg>`;
   }
   function iconSVG(kind) {
@@ -457,10 +521,10 @@ if (typeof window !== 'undefined') (() => {
     return `<svg class="ic" viewBox="0 0 32 32"><circle cx="16" cy="16" r="7" style="fill:#ffc93c"/>${[0,60,120,180,240,300].map(a => { const r = a * Math.PI / 180; return `<line x1="${16 + Math.cos(r) * 10}" y1="${16 + Math.sin(r) * 10}" x2="${16 + Math.cos(r) * 13.5}" y2="${16 + Math.sin(r) * 13.5}" stroke="#ffb000" stroke-width="2.4" stroke-linecap="round"/>`; }).join('')}</svg>`;
   }
   const MOOD_TAG = { dry: 'ฟ้าเปิด ออกไปได้', maybe: 'ลุ้นหน่อย พกร่มไว้', wet: 'ฝนมาแล้ว เย้!', idle: 'กำลังดมกลิ่นฝน…' };
-  function setMood(m, now) {
-    $('dog').innerHTML = dogSVG(m);
+  function setMood(m, now, poseIdx = 0, cap = null) {
+    $('dog').innerHTML = dogSVG(m, poseIdx);
     $('mood').className = 'mood ' + m;
-    $('mood').textContent = now ? 'ฝนตกอยู่ตอนนี้' : MOOD_TAG[m];
+    $('mood').textContent = cap || (now ? 'ฝนตกอยู่ตอนนี้' : MOOD_TAG[m]);
   }
   setMood('idle');
 
@@ -581,17 +645,42 @@ if (typeof window !== 'undefined') (() => {
   /* ---------- render ---------- */
   const level = p => (p >= 0.6 ? 'wet' : p >= 0.3 ? 'maybe' : 'dry');
   function renderHours(slots) {
-    const box = $('hours'); box.replaceChildren();
+    const box = $('hours'); box.replaceChildren(); state.hours = [];
     for (let h = 0; h < 4; h++) {
-      const grp = slots.slice(h * 4, h * 4 + 4).filter(s => s.p != null);
-      const p = grp.length ? Math.max(...grp.map(s => s.p)) : null;
-      const d = document.createElement('div'); const lv = p == null ? 'dry' : level(p);
-      d.className = 'hour ' + lv;
-      d.innerHTML = `<span class="t">${slots[h * 4].label}</span>${iconSVG(lv)}<span class="p">${p == null ? '–' : Math.round(p * 100) + '%'}</span>`;
-      d.title = `โอกาสฝนสูงสุดในชั่วโมงที่เริ่ม ${slots[h * 4].label}`;
-      (state.hours = h ? state.hours : [])[h] = { label: slots[h * 4].label, p, lv };
+      const qs4 = slots.slice(h * 4, h * 4 + 4), grp = qs4.filter(s => s.p != null);
+      const p = grp.length ? Math.max(...grp.map(s => s.p)) : null, lv = p == null ? 'dry' : level(p);
+      const end = fmtTime(qs4[3].tSec + 900);
+      state.hours[h] = { label: qs4[0].label, end, p, lv, q: qs4 };
+      const d = document.createElement('button'); d.type = 'button';
+      d.className = 'hour ' + lv; d.setAttribute('aria-pressed', state.sel === h ? 'true' : 'false');
+      d.setAttribute('aria-label', `ดูช่วง ${qs4[0].label}–${end} โอกาสฝน ${p == null ? 'ไม่มีข้อมูล' : Math.round(p * 100) + '%'}`);
+      d.innerHTML = `<span class="t">${qs4[0].label}</span>${iconSVG(lv)}<span class="p">${p == null ? '–' : Math.round(p * 100) + '%'}</span>`;
+      d.addEventListener('click', () => (state.sel === h ? showOverview() : showHour(h)));
       box.appendChild(d);
     }
+  }
+  const HOUR_TEXT = { dry: 'ช่วงนี้น่าจะไม่มีฝน', maybe: 'ช่วงนี้มีโอกาสฝน', wet: 'ช่วงนี้ฝนน่าจะตก' };
+  function markChips() { document.querySelectorAll('#hours .hour').forEach((b, i) => b.setAttribute('aria-pressed', state.sel === i ? 'true' : 'false')); }
+  function showHour(h) {
+    const H = state.hours[h]; if (!H) return;
+    state.sel = h; markChips();
+    const list = POSES[H.lv], pi = 1 + (h % (list.length - 1)), cap = list[pi].cap;
+    setMood(H.lv, false, pi, cap);
+    $('verdict').textContent = HOUR_TEXT[H.lv];
+    $('verdictSub').textContent = `${H.label}–${H.end} · โอกาสสูงสุด ${H.p == null ? '–' : Math.round(H.p * 100) + '%'}`;
+    const qb = $('quarters'); qb.replaceChildren();
+    for (const s of H.q) { const el = document.createElement('div'); const lv = s.p == null ? 'dry' : level(s.p);
+      el.className = 'q ' + lv; el.innerHTML = `<span>${s.label}</span><b>${s.p == null ? '–' : Math.round(s.p * 100) + '%'}</b>`; qb.appendChild(el); }
+    qb.hidden = false; $('backAll').hidden = false;
+    state.snap = { mood: H.lv, pose: pi, rainingNow: false, text: HOUR_TEXT[H.lv], sub: $('verdictSub').textContent, tag: cap };
+  }
+  function showOverview() {
+    state.sel = null; markChips();
+    const O = state.overview; if (!O) return;
+    $('verdict').textContent = O.v.text; $('verdictSub').textContent = O.v.sub;
+    setMood(O.v.cls || 'idle', O.rainingNow);
+    $('quarters').hidden = true; $('backAll').hidden = true;
+    state.snap = { mood: O.v.cls || 'idle', pose: 0, rainingNow: O.rainingNow, text: O.v.text, sub: O.v.sub, tag: $('mood').textContent };
   }
   function renderStrip(slots) {
     const strip = $('strip'), ticks = $('ticks'); strip.replaceChildren(); ticks.replaceChildren();
@@ -606,11 +695,8 @@ if (typeof window !== 'undefined') (() => {
     });
   }
   function renderVerdict(slots, rainingNow, updatedText) {
-    const v = Core.verdict(slots, rainingNow);
-    $('verdict').textContent = v.text; $('verdictSub').textContent = v.sub;
-    setMood(v.cls || 'idle', rainingNow);
+    state.overview = { v: Core.verdict(slots, rainingNow), rainingNow };
     $('updated').textContent = updatedText;
-    state.snap = { mood: v.cls || 'idle', rainingNow, text: v.text, sub: v.sub, tag: $('mood').textContent };
   }
   function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
   let CROP = 180, MODE = 'past', accCanvas = null, accCount = null;
@@ -733,6 +819,7 @@ if (typeof window !== 'undefined') (() => {
     renderVerdict(slots, !!(state.radar && state.radar.rainingNow),
       DEMO ? 'ข้อมูลตัวอย่าง' : 'อัปเดต ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' · รีเฟรชเองทุก 10 นาที');
     renderHours(slots); renderStrip(slots);
+    if (state.sel != null) showHour(state.sel); else showOverview();
     const fr = $('frame'); fr.max = Math.max(0, state.frames.length - 1); fr.value = fr.max;
     buildPast(); drawRadar(+fr.value); renderRadarStats(state.radar); renderModels(state.models);
     $('warn').hidden = !problems.length; $('warn').textContent = problems.join(' · ');
@@ -781,7 +868,7 @@ if (typeof window !== 'undefined') (() => {
     g.fillText(now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }), W2 - 100, 130);
     g.font = `400 26px ${F}`; g.fillStyle = '#66727f'; g.fillText(now.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }), W2 - 100, 172);
     // dog
-    const dog = await svgImage(dogSVG(S.mood), 490); g.drawImage(dog, (W2 - 490) / 2, 185, 490, 490);
+    const dog = await svgImage(dogSVG(S.mood, S.pose || 0), 490); g.drawImage(dog, (W2 - 490) / 2, 185, 490, 490);
     // mood pill
     let y = 748; g.textAlign = 'center'; g.font = `600 32px ${F}`;
     const pw = g.measureText(S.tag).width + 64; g.fillStyle = LV_COLOR[S.mood] || '#66727f'; rr(g, (W2 - pw) / 2, y - 42, pw, 60, 30); g.fill();
@@ -836,7 +923,8 @@ if (typeof window !== 'undefined') (() => {
   $('frame').addEventListener('input', e => drawRadar(+e.target.value));
   $('refresh').addEventListener('click', refresh);
   $('save').addEventListener('click', saveCard);
-  window.__makeCard = makeCard;
+  $('backAll').addEventListener('click', showOverview);
+  window.__makeCard = makeCard; window.__dog = dogSVG;
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => drawRadar(+$('frame').value));
   refresh();
   if (!DEMO) setInterval(refresh, 10 * 60 * 1000);
