@@ -5,134 +5,196 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ฝนจะตกไหมชาเย็น</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@500;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=Itim&family=Anuphan:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: one narrow column — verdict, 15-min strip, radar, model detail. Rain-slate neutrals, Thai-tea orange accent. */
+/* One narrow column: mascot answer card, four hour chips, 15-min strip, details folded away.
+   Three looks share one structure: sticker (thick outlines, offset shadows), doodle (paper + wobbly ink), clean (soft cards, no outlines). */
 :root{
-  --bg:#eef2f5; --surface:#ffffff; --line:#d5dde4; --fg:#16232e; --muted:#5b6b78;
-  --tea:#d9661f; --tea-soft:#fbe3d1; --rain:#2f6fb3; --rain-soft:#d6e6f6; --dry:#5c8a5a;
-  --display:"Bai Jamjuree","IBM Plex Sans Thai",system-ui,sans-serif;
-  --body:"IBM Plex Sans Thai",system-ui,sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,monospace;
+  --tea:#e07b39; --rain:#3b82c4; --dry:#4f9a5a; --maybe:#e0a020;
+  --dog:#e9a066; --ear:#b9693a; --muzzle:#fff1e0; --ink:#2b2b3a; --blush:#ff8fa0; --coat:#ffd23f;
   color-scheme:light;
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0f161c; --surface:#17212a; --line:#2a3743; --fg:#e4ebf0; --muted:#93a3b0;
-  --tea:#f0884a; --tea-soft:#3a2416; --rain:#6aa8e8; --rain-soft:#1b3047; --dry:#8bbd88; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#0f161c; --surface:#17212a; --line:#2a3743; --fg:#e4ebf0; --muted:#93a3b0;
-  --tea:#f0884a; --tea-soft:#3a2416; --rain:#6aa8e8; --rain-soft:#1b3047; --dry:#8bbd88; color-scheme:dark}
+/* ---------- sticker ---------- */
+:root[data-style="sticker"]{
+  --bg:#dcefff; --surface:#ffffff; --surface2:#f3f8ff; --fg:#22263a; --muted:#5d6680; --line:#22263a;
+  --outline:#22263a; --sw:3.5; --bw:2.5px; --radius:20px; --shadow:5px 5px 0 #22263a;
+  --display:"Mitr","Anuphan",system-ui,sans-serif; --body:"Anuphan",system-ui,sans-serif;
+  --lo:#cfd9e8;
+}
+@media (prefers-color-scheme:dark){:root[data-style="sticker"]{
+  --bg:#141a2b; --surface:#232b42; --surface2:#1b2236; --fg:#eef2ff; --muted:#a3acc7; --line:#0a0d17;
+  --outline:#0a0d17; --shadow:5px 5px 0 #0a0d17; --lo:#3a4560; --rain:#6fb0f0; color-scheme:dark}}
+/* ---------- doodle ---------- */
+:root[data-style="doodle"]{
+  --bg:#fbf7ee; --surface:#fffdf8; --surface2:#f6efe0; --fg:#3a3446; --muted:#7a7287; --line:#3a3446;
+  --outline:#3a3446; --sw:3; --bw:2px; --radius:14px; --shadow:none;
+  --display:"Itim","Anuphan",system-ui,sans-serif; --body:"Itim","Anuphan",system-ui,sans-serif;
+  --lo:#e3dccd; --rain:#4a7fc0;
+}
+@media (prefers-color-scheme:dark){:root[data-style="doodle"]{
+  --bg:#211e27; --surface:#2b2733; --surface2:#26222d; --fg:#f1ebde; --muted:#b2a9bd; --line:#d9d0c0;
+  --outline:#1a171f; --lo:#45404f; --rain:#7fb0e8; color-scheme:dark}}
+/* ---------- clean ---------- */
+:root[data-style="clean"]{
+  --bg:#f2f5f9; --surface:#ffffff; --surface2:#f6f8fb; --fg:#1d2733; --muted:#66727f; --line:#e2e7ee;
+  --outline:transparent; --sw:0; --bw:0px; --radius:24px; --shadow:0 6px 24px rgba(30,50,80,.08);
+  --display:"Anuphan",system-ui,sans-serif; --body:"Anuphan",system-ui,sans-serif;
+  --lo:#e2e8f0;
+}
+@media (prefers-color-scheme:dark){:root[data-style="clean"]{
+  --bg:#10151c; --surface:#19212b; --surface2:#151c25; --fg:#e8edf3; --muted:#97a3b0; --line:#26303c;
+  --shadow:0 6px 24px rgba(0,0,0,.35); --lo:#2a3441; --rain:#6aaaf0; color-scheme:dark}}
+
 *{box-sizing:border-box}
 html,body{background:var(--bg);color:var(--fg)}
-body{margin:0;font:15px/1.6 var(--body)}
-.wrap{max-width:720px;margin:0 auto;padding-block:20px 40px;
+body{margin:0;font:16px/1.55 var(--body)}
+:root[data-style="doodle"] body{
+  background-image:linear-gradient(var(--surface2) 1px,transparent 1px),linear-gradient(90deg,var(--surface2) 1px,transparent 1px);
+  background-size:22px 22px}
+.wrap{max-width:480px;margin:0 auto;padding-block:16px 40px;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
-  display:flex;flex-direction:column;gap:18px}
-header{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
-h1{font:700 1.5rem/1.2 var(--display);margin:0;text-wrap:balance}
-h1 span{color:var(--tea)}
-.coords{font:400 .78rem var(--mono);color:var(--muted)}
-.verdict{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:6px}
-.verdict .big{font:700 1.9rem/1.25 var(--display);text-wrap:balance}
-.verdict .big.wet{color:var(--rain)} .verdict .big.dry{color:var(--dry)} .verdict .big.maybe{color:var(--tea)}
-.verdict .sub{color:var(--muted)}
-.meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:.82rem;color:var(--muted)}
-button{font:500 .85rem var(--body);background:var(--tea);color:#fff;border:0;border-radius:8px;padding:6px 14px;cursor:pointer}
-button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
-button[disabled]{opacity:.5;cursor:wait}
-section h2{font:700 1.05rem var(--display);margin:0 0 8px}
-.label{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-.strip{display:grid;grid-template-columns:repeat(16,1fr);gap:3px;align-items:end;height:120px}
-.bar{position:relative;border-radius:4px 4px 0 0;background:var(--rain);min-height:3px}
-.bar.lo{background:var(--line)}
-.bar.mid{background:var(--tea)}
-.ticks{display:grid;grid-template-columns:repeat(16,1fr);gap:3px;font:400 .66rem var(--mono);color:var(--muted);margin-top:4px}
-.ticks span{grid-column:span 4;text-align:left;white-space:nowrap}
-.pcts{display:grid;grid-template-columns:repeat(16,1fr);gap:3px;font:500 .62rem var(--mono);color:var(--fg);margin-bottom:2px}
-.pcts span{text-align:center}
-.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.78rem;color:var(--muted);margin-top:8px}
-.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
-.radarbox{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:16px;align-items:start}
-@media (max-width:620px){.radarbox{grid-template-columns:minmax(0,1fr)}}
-canvas{width:100%;max-width:320px;aspect-ratio:1;border-radius:10px;border:1px solid var(--line);background:var(--surface);display:block}
-dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:.88rem}
-dt{color:var(--muted)} dd{margin:0;font-variant-numeric:tabular-nums}
-.scrub{display:flex;align-items:center;gap:8px;margin-top:8px;max-width:320px}
-.scrub input{flex:1;min-width:0}
+  display:flex;flex-direction:column;gap:16px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.top h1{font:600 1.15rem/1.2 var(--display);margin:0}
+.top h1 span{color:var(--tea)}
+.place{font-size:.8rem;color:var(--muted)}
+.iconbtn{width:44px;height:44px;flex:none;border-radius:50%;border:var(--bw) solid var(--outline);background:var(--surface);
+  color:var(--fg);display:grid;place-items:center;cursor:pointer;box-shadow:var(--shadow)}
+:root[data-style="clean"] .iconbtn{box-shadow:none;background:var(--surface)}
+.iconbtn:active{transform:translate(2px,2px)}
+.iconbtn:focus-visible,summary:focus-visible{outline:3px solid var(--tea);outline-offset:3px}
+.iconbtn[disabled] svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.card{background:var(--surface);border:var(--bw) solid var(--outline);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+:root[data-style="doodle"] .card{border-color:var(--line);border-radius:255px 18px 225px 18px/18px 225px 18px 255px}
+
+.hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding-top:10px}
+.dog{width:190px;height:190px}
+.dog .o{stroke:var(--outline);stroke-width:var(--sw);stroke-linejoin:round;stroke-linecap:round}
+.dog .ink{stroke:var(--ink);stroke-width:4;fill:none;stroke-linecap:round}
+:root[data-style="doodle"] .dog{filter:url(#wobble)}
+.mood{display:inline-block;font:500 .85rem var(--display);padding:3px 12px;border-radius:999px;border:var(--bw) solid var(--outline);color:#fff}
+.mood.dry{background:var(--dry)} .mood.maybe{background:var(--maybe);color:#2b2200} .mood.wet{background:var(--rain)} .mood.idle{background:var(--muted)}
+.answer{font:600 1.6rem/1.3 var(--display);margin:4px 0 0;text-wrap:balance}
+.sub{color:var(--muted);font-size:.92rem}
+.updated{font:400 .75rem var(--mono);color:var(--muted);margin-top:4px}
+
+.hours{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.hour{background:var(--surface);border:var(--bw) solid var(--outline);border-radius:16px;box-shadow:var(--shadow);
+  padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:2px}
+:root[data-style="sticker"] .hour{box-shadow:3px 3px 0 var(--outline)}
+:root[data-style="doodle"] .hour{border-color:var(--line);border-radius:18px 8px 16px 10px}
+.hour .t{font:500 .78rem var(--mono);color:var(--muted)}
+.hour .p{font:600 1.15rem var(--display);font-variant-numeric:tabular-nums}
+.hour .ic{width:30px;height:30px}
+.hour.wet .p{color:var(--rain)} .hour.maybe .p{color:var(--tea)}
+
+h2{font:600 1rem var(--display);margin:0 0 10px}
+.strip{display:grid;grid-template-columns:repeat(16,1fr);gap:4px;align-items:end;height:90px}
+.bar{border-radius:6px 6px 2px 2px;background:var(--rain);min-height:4px}
+.bar.lo{background:var(--lo)} .bar.mid{background:var(--tea)}
+:root[data-style="sticker"] .bar{border:2px solid var(--outline)}
+.ticks{display:grid;grid-template-columns:repeat(16,1fr);gap:4px;font:400 .68rem var(--mono);color:var(--muted);margin-top:5px}
+.ticks span{grid-column:span 4;white-space:nowrap}
+.key{display:flex;gap:12px;flex-wrap:wrap;font-size:.78rem;color:var(--muted);margin-top:8px}
+.key i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+
+details.card{padding:0}
+summary{list-style:none;cursor:pointer;padding:14px 18px;font:600 1rem var(--display);display:flex;justify-content:space-between;align-items:center;gap:10px}
+summary::-webkit-details-marker{display:none}
+summary .chev{transition:transform .2s}
+details[open] summary .chev{transform:rotate(180deg)}
+.detail-body{padding:0 18px 18px;display:flex;flex-direction:column;gap:14px}
+canvas{width:100%;aspect-ratio:1;border-radius:14px;border:var(--bw) solid var(--outline);background:var(--surface2);display:block}
+:root[data-style="clean"] canvas{border:1px solid var(--line)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--surface2);border-radius:14px;padding:4px}
+.seg button{font:500 .8rem var(--body);color:var(--muted);background:transparent;border:0;border-radius:10px;padding:8px 4px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.seg button:focus-visible{outline:2px solid var(--tea)}
+.scrub{display:flex;align-items:center;gap:8px}
+.scrub input{flex:1;min-width:0;accent-color:var(--tea)}
 .scrub span{font:400 .75rem var(--mono);color:var(--muted)}
+dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:.88rem}
+dt{color:var(--muted)} dd{margin:0}
 .tablewrap{overflow-x:auto}
-table{border-collapse:collapse;font:400 .8rem var(--mono);width:100%}
-th,td{padding:4px 6px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+table{border-collapse:collapse;font:400 .78rem var(--mono);width:100%}
+th,td{padding:4px 6px;text-align:right;border-bottom:1px solid var(--lo);white-space:nowrap}
 th:first-child,td:first-child{text-align:left}
-th{font-weight:500;color:var(--muted)}
-td.wet{color:var(--rain);font-weight:500}
-.note{font-size:.82rem;color:var(--muted);max-width:65ch}
-.warn{background:var(--tea-soft);border-radius:8px;padding:8px 12px;font-size:.85rem}
-footer{font-size:.75rem;color:var(--muted)}
+th{font-weight:500;color:var(--muted)} td.wet{color:var(--rain);font-weight:500}
+.note{font-size:.82rem;color:var(--muted);margin:0}
+.warn{background:var(--surface);border:var(--bw) dashed var(--tea);border-radius:14px;padding:10px 14px;font-size:.85rem}
+footer{font-size:.72rem;color:var(--muted);text-align:center}
 footer a{color:inherit}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.bob{animation:bob 2.6s ease-in-out infinite;transform-origin:50% 90%}
+@keyframes bob{50%{transform:translateY(-4px) rotate(-1.5deg)}}
+.drops path{animation:fall 1.1s linear infinite}
+.drops path:nth-child(2){animation-delay:.35s}.drops path:nth-child(3){animation-delay:.7s}
+@keyframes fall{from{transform:translateY(-10px);opacity:0}30%{opacity:1}to{transform:translateY(18px);opacity:0}}
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="wobble"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="3"/><feDisplacementMap in="SourceGraphic" scale="3.2"/></filter>
+</svg>
 <div class="wrap">
-  <header>
-    <h1>ฝนจะตกไหม<span>ชาเย็น</span></h1>
-    <div class="coords" id="coords"></div>
-  </header>
+  <div class="top">
+    <div>
+      <h1>ฝนจะตกไหม<span>ชาเย็น</span></h1>
+      <div class="place" id="coords">อ.คีรีรัฐนิคม จ.สุราษฎร์ธานี</div>
+    </div>
+    <button class="iconbtn" id="refresh" type="button" aria-label="อัปเดตตอนนี้">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 6.3"/><path d="M20 4v7h-7"/></svg>
+    </button>
+  </div>
 
-  <div class="verdict" aria-live="polite">
-    <div class="label">อีก 4 ชั่วโมงข้างหน้า</div>
-    <div class="big" id="verdict">กำลังดึงข้อมูล…</div>
+  <div class="card hero" aria-live="polite">
+    <div id="dog" class="bob"></div>
+    <span class="mood idle" id="mood">กำลังดมกลิ่นฝน…</span>
+    <p class="answer" id="verdict">กำลังดึงข้อมูล</p>
     <div class="sub" id="verdictSub"></div>
-    <div class="meta"><span id="updated"></span><button id="refresh" type="button">อัปเดตตอนนี้</button></div>
+    <div class="updated" id="updated"></div>
   </div>
   <div class="warn" id="warn" hidden></div>
 
-  <section>
-    <h2>โอกาสฝนทุก 15 นาที</h2>
-    <div class="pcts" id="pcts"></div>
-    <div class="strip" id="strip" role="img" aria-label="กราฟโอกาสฝนรายช่วง 15 นาที"></div>
-    <div class="ticks" id="ticks"></div>
-    <div class="legend">
-      <span><i style="background:var(--line)"></i>ต่ำกว่า 30%</span>
-      <span><i style="background:var(--tea)"></i>30–59%</span>
-      <span><i style="background:var(--rain)"></i>60% ขึ้นไป</span>
-    </div>
-  </section>
+  <div class="hours" id="hours"></div>
 
-  <section>
-    <h2>เรดาร์ฝนรอบพิกัด</h2>
-    <div class="radarbox">
-      <div>
-        <canvas id="radar" width="320" height="320"></canvas>
-        <div class="scrub"><input id="frame" type="range" min="0" max="0" value="0" aria-label="เลือกเวลาภาพเรดาร์"><span id="frameTime">–</span></div>
+  <div class="card">
+    <h2>ทุก 15 นาที</h2>
+    <div class="strip" id="strip" role="img" aria-label="โอกาสฝนรายช่วง 15 นาที"></div>
+    <div class="ticks" id="ticks"></div>
+    <div class="key"><span><i style="background:var(--lo)"></i>ต่ำกว่า 30%</span><span><i style="background:var(--tea)"></i>30–59%</span><span><i style="background:var(--rain)"></i>60% ขึ้นไป</span></div>
+  </div>
+
+  <details class="card" id="details">
+    <summary>เรดาร์และรายละเอียด <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="detail-body">
+      <div class="seg" role="group" aria-label="ระยะมองเรดาร์">
+        <button type="button" data-crop="110">ใกล้ ~130 กม.</button>
+        <button type="button" data-crop="180" aria-pressed="true">กลาง ~220 กม.</button>
+        <button type="button" data-crop="300">ไกล ~360 กม.</button>
       </div>
-      <dl id="radarStats">
+      <canvas id="radar" width="640" height="640"></canvas>
+      <div class="scrub"><input id="frame" type="range" min="0" max="0" value="0" aria-label="เลือกเวลาภาพเรดาร์"><span id="frameTime">–</span></div>
+      <dl>
         <dt>ฝนที่พิกัดตอนนี้</dt><dd id="rNow">–</dd>
         <dt>ฝนใกล้สุด</dt><dd id="rNear">–</dd>
         <dt>กลุ่มฝนเคลื่อนที่</dt><dd id="rMove">–</dd>
-        <dt>ทิศทางเทียบพิกัด</dt><dd id="rAppr">–</dd>
+        <dt>เทียบกับพิกัด</dt><dd id="rAppr">–</dd>
         <dt>ภาพล่าสุด</dt><dd id="rAge">–</dd>
       </dl>
+      <p class="note">วงกลมคือรัศมี 10, 25 และ 50 กม. ลูกศรส้มคือทางที่กลุ่มฝนจะไปใน 1 ชั่วโมง</p>
+      <div class="tablewrap"><table id="models"></table></div>
+      <p class="note">ชั่วโมงแรกเชื่อเรดาร์เป็นหลัก แล้วค่อย ๆ ให้น้ำหนักแบบจำลองมากขึ้นจนเหลือแบบจำลองล้วนที่ 2 ชั่วโมง ฝนที่ก่อตัวใหม่เรดาร์ยังมองไม่เห็น ช่วงบ่ายตัวเลขจึงพึ่งแบบจำลองมากกว่า</p>
     </div>
-    <p class="note">วงกลมคือรัศมี 10, 25 และ 50 กม. ลูกศรสีส้มคือทิศที่กลุ่มฝนเคลื่อนไปใน 1 ชั่วโมง ภาพเรดาร์ละเอียดราว 1.2 กม./พิกเซล</p>
-  </section>
-
-  <section>
-    <h2>แบบจำลองพยากรณ์รายชั่วโมง</h2>
-    <div class="tablewrap"><table id="models"></table></div>
-    <p class="note">ช่อง "Ensemble" คือสัดส่วนสมาชิกที่ให้ฝน ≥0.1 มม./ชม. ช่องแบบจำลองเดี่ยวแสดงปริมาณฝน (มม.) ในชั่วโมงที่สิ้นสุดเวลานั้น</p>
-  </section>
-
-  <section>
-    <h2>วิธีคิดตัวเลข</h2>
-    <p class="note">ชั่วโมงแรกเชื่อเรดาร์เป็นหลัก: หาความเร็วกลุ่มฝนจากภาพย้อนหลัง 30 นาที แล้วดูว่าฝนที่อยู่ต้นทางจะเลื่อนมาถึงพิกัดเมื่อไร ยิ่งไกลออกไปน้ำหนักเรดาร์ยิ่งลด และหมดลงที่ 2 ชั่วโมง ส่วนที่เหลือมาจากแบบจำลอง: ensemble ของ ECMWF, GFS และ ICON รวมกับแบบจำลองเดี่ยวหลายสำนัก ฝนพาความร้อนที่ก่อตัวใหม่ เรดาร์จะยังไม่เห็นจนกว่าเมฆจะก่อตัว ช่วงบ่ายตัวเลขจึงพึ่งแบบจำลองมากกว่า</p>
-  </section>
+  </details>
 
   <footer>
-    ข้อมูลเรดาร์: <a href="https://www.rainviewer.com" target="_blank" rel="noopener">Weather data by RainViewer</a> ·
-    แบบจำลอง: <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a> (CC BY 4.0) ·
-    แผนที่: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors
+    <a href="https://www.rainviewer.com" target="_blank" rel="noopener">Weather data by RainViewer</a> ·
+    <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a> (CC BY 4.0) ·
+    © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>
   </footer>
 </div>
 
@@ -263,19 +325,88 @@ if (typeof module !== 'undefined') module.exports = Core;
 /* ===== App (browser) ===== */
 if (typeof window !== 'undefined') (() => {
   const qs = new URLSearchParams(location.search);
+  const STYLES = ['sticker', 'doodle', 'clean'];
+  const DEFAULT_STYLE = 'clean';
+  document.documentElement.dataset.style = STYLES.includes(qs.get('style')) ? qs.get('style') : DEFAULT_STYLE;
+  const DEMO = qs.get('demo');
   const LAT = parseFloat(qs.get('lat')) || 9.016269177096914;
   const LON = parseFloat(qs.get('lon')) || 98.96555947723334;
   const $ = id => document.getElementById(id);
-  $('coords').textContent = `${LAT.toFixed(5)}, ${LON.toFixed(5)}`;
+  if (qs.get('lat')) $('coords').textContent = `${LAT.toFixed(4)}, ${LON.toFixed(4)}`;
 
-  const SLOT_MIN = 15, NSLOT = 16;
+  /* ---------- mascot ---------- */
+  function dogSVG(mood) {
+    const S = (f) => `style="fill:${f}"`;
+    const o = 'class="o"';
+    const wet = mood === 'wet';
+    let eyes, mouth, extra = '', back = '';
+    if (mood === 'dry') {
+      eyes = `<path class="ink" d="M71 100 Q80 89 89 100"/><path class="ink" d="M111 100 Q120 89 129 100"/>`;
+      mouth = `<path ${S('#ff7a8a')} d="M94 139 Q100 156 106 139 Z"/><path class="ink" d="M86 134 Q100 149 114 134"/>`;
+      back = `<g><circle ${o} cx="184" cy="70" r="12" ${S('#ffc93c')}/>` +
+        [0,45,90,135,180,225,270,315].map(a => { const r = a * Math.PI / 180, c = Math.cos(r), s = Math.sin(r);
+          return `<line x1="${184 + c * 17}" y1="${70 + s * 17}" x2="${184 + c * 23}" y2="${70 + s * 23}" stroke="#ffb000" stroke-width="4" stroke-linecap="round"/>`; }).join('') + `</g>`;
+    } else if (mood === 'maybe') {
+      eyes = `<circle cx="80" cy="94" r="7.5" ${S('var(--ink)')}/><circle cx="120" cy="94" r="7.5" ${S('var(--ink)')}/>` +
+        `<circle cx="82.5" cy="91" r="2.6" ${S('#fff')}/><circle cx="122.5" cy="91" r="2.6" ${S('#fff')}/>`;
+      mouth = `<ellipse cx="100" cy="139" rx="4.5" ry="5.5" ${S('var(--ink)')}/>`;
+      back = `<path ${o} ${S('var(--surface)')} d="M2 84 a11 11 0 0 1 3-21 a15 15 0 0 1 28-5 a12 12 0 0 1 8 26 Z"/>` +
+        `<text x="174" y="88" font-size="38" font-weight="700" font-family="Mitr,sans-serif" ${S('var(--tea)')}>?</text>`;
+    } else if (wet) {
+      eyes = `<circle cx="80" cy="99" r="7.5" ${S('var(--ink)')}/><circle cx="120" cy="99" r="7.5" ${S('var(--ink)')}/>` +
+        `<circle cx="82.5" cy="96" r="2.6" ${S('#fff')}/><circle cx="122.5" cy="96" r="2.6" ${S('#fff')}/>` +
+        `<path class="ink" style="stroke-width:3.2" d="M69 87 Q78 84 88 80"/><path class="ink" style="stroke-width:3.2" d="M131 87 Q122 84 112 80"/>`;
+      mouth = `<path class="ink" d="M90 140 Q95 135 100 140 Q105 145 110 140"/>`;
+      extra = `<g class="drops">` + [[10, 44], [190, 40], [100, -4]].map(([x, y]) =>
+        `<path ${S('var(--rain)')} d="M${x} ${y} q-6 10 0 14 q6 -4 0 -14 Z"/>`).join('') + `</g>`;
+    } else {
+      eyes = `<circle cx="80" cy="98" r="7.5" ${S('var(--ink)')}/><circle cx="120" cy="98" r="7.5" ${S('var(--ink)')}/>` +
+        `<circle cx="82.5" cy="95" r="2.6" ${S('#fff')}/><circle cx="122.5" cy="95" r="2.6" ${S('#fff')}/>`;
+      mouth = `<path class="ink" d="M91 135 Q95.5 140 100 135 Q104.5 140 109 135"/>`;
+    }
+    const hood = wet ? `<path ${o} ${S('var(--coat)')} d="M36 108 C32 38 168 38 164 108 C152 72 48 72 36 108 Z"/>` : '';
+    return `<svg class="dog" viewBox="-10 -12 220 222" role="img" aria-label="น้องหมาชาเย็น">
+      ${back}
+      <ellipse ${o} cx="100" cy="190" rx="50" ry="26" ${S(wet ? 'var(--coat)' : 'var(--dog)')}/>
+      ${wet ? '' : `<path d="M66 162 Q100 180 134 162" stroke="var(--tea)" stroke-width="9" fill="none" stroke-linecap="round"/><circle ${o} cx="100" cy="176" r="7" ${S('#ffc93c')}/>`}
+      <path ${o} ${S('var(--ear)')} d="M54 84 C44 60 38 30 46 20 C54 16 74 32 94 56 Z"/>
+      <path ${S('var(--blush)')} opacity=".5" d="M59 72 C54 54 51 38 55 31 C62 33 74 44 84 56 Z"/>
+      <path ${o} ${S('var(--ear)')} d="M146 84 C156 60 162 30 154 20 C146 16 126 32 106 56 Z"/>
+      <path ${S('var(--blush)')} opacity=".5" d="M141 72 C146 54 149 38 145 31 C138 33 126 44 116 56 Z"/>
+      <ellipse ${o} cx="100" cy="106" rx="60" ry="54" ${S('var(--dog)')}/>
+      <ellipse cx="125" cy="92" rx="17" ry="14" ${S('var(--ear)')} opacity=".45"/>
+      ${hood}
+      <ellipse ${o} cx="100" cy="129" rx="28" ry="21" ${S('var(--muzzle)')}/>
+      ${eyes}
+      <path ${S('var(--ink)')} d="M90 117 Q100 111 110 117 Q107 126 100 127 Q93 126 90 117 Z"/>
+      ${mouth}
+      <ellipse cx="66" cy="119" rx="8" ry="4.5" ${S('var(--blush)')} opacity=".55"/>
+      <ellipse cx="134" cy="119" rx="8" ry="4.5" ${S('var(--blush)')} opacity=".55"/>
+      ${extra}
+    </svg>`;
+  }
+  function iconSVG(kind) {
+    if (kind === 'wet') return `<svg class="ic" viewBox="0 0 32 32"><path d="M9 17a6 6 0 0 1 1-12 8 8 0 0 1 14 2 5 5 0 0 1 0 10Z" style="fill:var(--lo)"/><path d="M11 21l-2 5M17 21l-2 5M23 21l-2 5" stroke="var(--rain)" stroke-width="2.6" stroke-linecap="round"/></svg>`;
+    if (kind === 'maybe') return `<svg class="ic" viewBox="0 0 32 32"><circle cx="20" cy="11" r="6" style="fill:#ffc93c"/><path d="M7 25a6 6 0 0 1 1-12 8 8 0 0 1 14 2 5 5 0 0 1 0 10Z" style="fill:var(--lo)"/></svg>`;
+    return `<svg class="ic" viewBox="0 0 32 32"><circle cx="16" cy="16" r="7" style="fill:#ffc93c"/>${[0,60,120,180,240,300].map(a => { const r = a * Math.PI / 180; return `<line x1="${16 + Math.cos(r) * 10}" y1="${16 + Math.sin(r) * 10}" x2="${16 + Math.cos(r) * 13.5}" y2="${16 + Math.sin(r) * 13.5}" stroke="#ffb000" stroke-width="2.4" stroke-linecap="round"/>`; }).join('')}</svg>`;
+  }
+  const MOOD_TAG = { dry: 'ฟ้าเปิด ออกไปได้', maybe: 'ลุ้นหน่อย พกร่มไว้', wet: 'ฝนมา หลบก่อนนะ', idle: 'กำลังดมกลิ่นฝน…' };
+  function setMood(m, now) {
+    $('dog').innerHTML = dogSVG(m);
+    $('mood').className = 'mood ' + m;
+    $('mood').textContent = now ? 'ฝนตกอยู่ตอนนี้' : MOOD_TAG[m];
+  }
+  setMood('idle');
+
+  /* ---------- data ---------- */
+  const NSLOT = 16;
   const ENS_MODELS = ['ecmwf_ifs025', 'gfs025', 'icon_seamless'];
   const DET_MODELS = [['ecmwf_ifs025','ECMWF'],['gfs_seamless','GFS'],['icon_seamless','ICON'],['jma_seamless','JMA'],['gem_seamless','GEM'],['cma_grapes_global','CMA']];
   const OM = 'https://api.open-meteo.com/v1/forecast';
   const OME = 'https://ensemble-api.open-meteo.com/v1/ensemble';
   const fmtTime = s => new Date(s * 1000).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
 
-  const state = { frames: [], masks: [], imgs: [], radar: null, models: null, busy: false };
+  const state = { frames: [], radar: null, models: null, busy: false };
   const P = Core.lonLatToPx(LON, LAT);
   const tileX0 = Math.floor(P.x / 256) - 1, tileY0 = Math.floor(P.y / 256) - 1;
   const W = 768, H = 768, px = P.x - tileX0 * 256, py = P.y - tileY0 * 256;
@@ -285,11 +416,9 @@ if (typeof window !== 'undefined') (() => {
   function loadImg(src, cors) {
     return new Promise((res, rej) => { const im = new Image(); if (cors) im.crossOrigin = 'anonymous'; im.onload = () => res(im); im.onerror = () => rej(new Error('img ' + src)); im.src = src; });
   }
-
   async function loadFrame(host, path) {
     const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
-    let tainted = false;
-    const jobs = [];
+    let tainted = false; const jobs = [];
     for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) {
       const url = `${host}${path}/256/${Core.Z}/${tileX0 + i}/${tileY0 + j}/2/0_0.png`;
       jobs.push(loadImg(url, true).catch(() => { tainted = true; return loadImg(url, false); })
@@ -298,48 +427,40 @@ if (typeof window !== 'undefined') (() => {
     await Promise.all(jobs);
     let mask = null;
     if (!tainted) {
-      try {
-        const d = g.getImageData(0, 0, W, H).data; mask = new Uint8Array(W * H);
-        for (let k = 0; k < W * H; k++) mask[k] = d[k * 4 + 3] > 60 ? 1 : 0;
-      } catch (e) { mask = null; }
+      try { const d = g.getImageData(0, 0, W, H).data; mask = new Uint8Array(W * H);
+        for (let k = 0; k < W * H; k++) mask[k] = d[k * 4 + 3] > 60 ? 1 : 0; } catch (e) { mask = null; }
     }
     return { canvas: c, mask };
   }
-
   let basemap = null;
   async function loadBasemap() {
-    const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
-    const jobs = [];
+    const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'); const jobs = [];
     for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++)
       jobs.push(loadImg(`https://tile.openstreetmap.org/${Core.Z}/${tileX0 + i}/${tileY0 + j}.png`, false)
         .then(im => g.drawImage(im, i * 256, j * 256)).catch(() => {}));
     await Promise.all(jobs); basemap = c;
   }
-
   async function loadRadar() {
     const meta = await getJSON('https://api.rainviewer.com/public/weather-maps.json');
     const past = (meta.radar && meta.radar.past || []).slice(-12);
-    const frames = await Promise.all(past.map(f => loadFrame(meta.host, f.path).then(fr => ({ ...fr, time: f.time }))));
-    return frames;
+    return Promise.all(past.map(f => loadFrame(meta.host, f.path).then(fr => ({ ...fr, time: f.time }))));
   }
-
   async function loadModels() {
     const now = Math.floor(Date.now() / 1000);
     const ens = await Promise.allSettled(ENS_MODELS.map(m =>
       getJSON(`${OME}?latitude=${LAT}&longitude=${LON}&hourly=precipitation&models=${m}&forecast_hours=7&past_hours=1&timeformat=unixtime`).then(j => ({ m, j }))));
     const det = await Promise.allSettled(DET_MODELS.map(([m, name]) =>
       getJSON(`${OM}?latitude=${LAT}&longitude=${LON}&hourly=precipitation,precipitation_probability&models=${m}&forecast_hours=7&past_hours=1&timeformat=unixtime`).then(j => ({ m, name, j }))));
-    const wind = await getJSON(`${OM}?latitude=${LAT}&longitude=${LON}&current=precipitation&hourly=wind_speed_700hPa,wind_direction_700hPa&forecast_hours=2&timeformat=unixtime`).catch(() => null);
+    const wind = await getJSON(`${OM}?latitude=${LAT}&longitude=${LON}&hourly=wind_speed_700hPa,wind_direction_700hPa&forecast_hours=2&timeformat=unixtime`).catch(() => null);
     return { now, ens: ens.filter(r => r.status === 'fulfilled').map(r => r.value), det: det.filter(r => r.status === 'fulfilled').map(r => r.value), wind };
   }
-
   function modelProbAt(models, tSec) {
     const parts = [];
     for (const { j } of models.ens) {
       const i = Core.hourIndexFor(j.hourly.time, tSec); if (i < 0) continue;
       const e = Core.ensembleFrac(j.hourly, i); if (e) parts.push({ p: e.p, w: 2 });
     }
-    let dk = 0, dn = 0, pp = [];
+    let dk = 0, dn = 0; const pp = [];
     for (const { j } of models.det) {
       const i = Core.hourIndexFor(j.hourly.time, tSec); if (i < 0) continue;
       const v = j.hourly.precipitation[i]; if (v != null) { dn++; if (v >= 0.2) dk++; }
@@ -351,18 +472,15 @@ if (typeof window !== 'undefined') (() => {
     if (!parts.length) return null;
     return parts.reduce((a, b) => a + b.p * b.w, 0) / parts.reduce((a, b) => a + b.w, 0);
   }
-
   function analyseRadar(frames, models) {
     const ok = frames.filter(f => f.mask);
     if (ok.length < 2) return null;
-    const last = ok[ok.length - 1];
-    // motion from up to two pairs spanning ~30 min
-    const pairs = [];
+    const last = ok[ok.length - 1]; const pairs = [];
     for (const back of [3, 2]) {
       const a = ok[ok.length - 1 - back]; if (!a) continue;
       const dt = (last.time - a.time) / 60; if (dt <= 0) continue;
       const m = Core.estimateMotion(a.mask, last.mask, W, H, Math.round(px), Math.round(py), 150, 14, 2);
-      if (m.conf > 0) pairs.push({ vx: m.dx / dt, vy: m.dy / dt, conf: m.conf, count: m.count });
+      if (m.conf > 0) pairs.push({ vx: m.dx / dt, vy: m.dy / dt, conf: m.conf });
     }
     let vx = 0, vy = 0, conf = 0, source = 'none';
     if (pairs.length) {
@@ -376,15 +494,11 @@ if (typeof window !== 'undefined') (() => {
       if (sp != null && dr != null) { const s = Core.steeringFromWind(sp, dr, LAT); vx = s.vx; vy = s.vy; conf = 0.3; source = 'wind'; }
     }
     const atPoint = Core.fracInDisk(last.mask, W, H, px, py, 1.5);
-    const near = Core.nearestRain(last.mask, W, H, px, py);
-    return { last, vx, vy, conf, source, rainingNow: atPoint != null && atPoint >= 0.5, near };
+    return { last, vx, vy, conf, source, rainingNow: atPoint != null && atPoint >= 0.5, near: Core.nearestRain(last.mask, W, H, px, py) };
   }
-
   function buildSlots(models, radar) {
-    const now = Date.now() / 1000;
-    const start = Math.ceil(now / 900) * 900;
-    const radarAge = radar ? (now - radar.last.time) / 60 : 0;
-    const slots = [];
+    const now = Date.now() / 1000, start = Math.ceil(now / 900) * 900;
+    const radarAge = radar ? (now - radar.last.time) / 60 : 0; const slots = [];
     for (let k = 0; k < NSLOT; k++) {
       const tSec = start + k * 900, t = Math.round((tSec - now) / 60);
       let r = null;
@@ -395,126 +509,140 @@ if (typeof window !== 'undefined') (() => {
     return Core.blend(slots);
   }
 
+  /* ---------- render ---------- */
+  const level = p => (p >= 0.6 ? 'wet' : p >= 0.3 ? 'maybe' : 'dry');
+  function renderHours(slots) {
+    const box = $('hours'); box.replaceChildren();
+    for (let h = 0; h < 4; h++) {
+      const grp = slots.slice(h * 4, h * 4 + 4).filter(s => s.p != null);
+      const p = grp.length ? Math.max(...grp.map(s => s.p)) : null;
+      const d = document.createElement('div'); const lv = p == null ? 'dry' : level(p);
+      d.className = 'hour ' + lv;
+      d.innerHTML = `<span class="t">${slots[h * 4].label}</span>${iconSVG(lv)}<span class="p">${p == null ? '–' : Math.round(p * 100) + '%'}</span>`;
+      d.title = `โอกาสฝนสูงสุดในชั่วโมงที่เริ่ม ${slots[h * 4].label}`;
+      box.appendChild(d);
+    }
+  }
   function renderStrip(slots) {
-    const strip = $('strip'), ticks = $('ticks'), pcts = $('pcts');
-    strip.replaceChildren(); ticks.replaceChildren(); pcts.replaceChildren();
+    const strip = $('strip'), ticks = $('ticks'); strip.replaceChildren(); ticks.replaceChildren();
     slots.forEach((s, k) => {
-      const b = document.createElement('div');
-      const p = s.p == null ? 0 : s.p;
+      const b = document.createElement('div'), p = s.p == null ? 0 : s.p;
       b.className = 'bar ' + (p >= 0.6 ? '' : p >= 0.3 ? 'mid' : 'lo');
-      b.style.height = Math.max(3, p * 100) + '%';
+      b.style.height = Math.max(4, p * 100) + '%';
       b.title = `${s.label} · ${s.p == null ? 'ไม่มีข้อมูล' : Math.round(p * 100) + '%'}` +
         (s.radar != null ? ` · เรดาร์ ${Math.round(s.radar * 100)}%` : '') + (s.model != null ? ` · แบบจำลอง ${Math.round(s.model * 100)}%` : '');
       strip.appendChild(b);
-      const pc = document.createElement('span'); pc.textContent = s.p == null ? '' : Math.round(p * 100); pcts.appendChild(pc);
       if (k % 4 === 0) { const tk = document.createElement('span'); tk.textContent = s.label; ticks.appendChild(tk); }
     });
   }
-
+  function renderVerdict(slots, rainingNow, updatedText) {
+    const v = Core.verdict(slots, rainingNow);
+    $('verdict').textContent = v.text; $('verdictSub').textContent = v.sub;
+    setMood(v.cls || 'idle', rainingNow);
+    $('updated').textContent = updatedText;
+  }
   function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
-  const CROP = 300;
+  let CROP = 180;
   function drawRadar(idx) {
-    const cv = $('radar'), g = cv.getContext('2d'), S = cv.width;
-    g.fillStyle = css('--surface'); g.fillRect(0, 0, S, S);
+    const cv = $('radar'), g = cv.getContext('2d'), S = cv.width, k = S / 320;
+    g.fillStyle = css('--surface2'); g.fillRect(0, 0, S, S);
     const sx = px - CROP / 2, sy = py - CROP / 2;
     if (basemap) { g.globalAlpha = 0.55; g.drawImage(basemap, sx, sy, CROP, CROP, 0, 0, S, S); g.globalAlpha = 1; }
     const f = state.frames[idx];
     if (f) { g.globalAlpha = 0.9; g.drawImage(f.canvas, sx, sy, CROP, CROP, 0, 0, S, S); g.globalAlpha = 1; $('frameTime').textContent = fmtTime(f.time); }
     const sc = S / CROP, c = S / 2;
-    g.strokeStyle = css('--muted'); g.lineWidth = 1; g.setLineDash([3, 4]);
+    g.strokeStyle = css('--muted'); g.lineWidth = 1.2 * k; g.setLineDash([3 * k, 4 * k]);
     for (const km of [10, 25, 50]) { g.beginPath(); g.arc(c, c, km / KMPX * sc, 0, Math.PI * 2); g.stroke(); }
     g.setLineDash([]);
     const R = state.radar;
     if (R && (R.vx || R.vy)) {
       const ex = c + R.vx * 60 * sc, ey = c + R.vy * 60 * sc;
-      g.strokeStyle = css('--tea'); g.fillStyle = css('--tea'); g.lineWidth = 2.5;
+      g.strokeStyle = css('--tea'); g.fillStyle = css('--tea'); g.lineWidth = 3 * k;
       g.beginPath(); g.moveTo(c, c); g.lineTo(ex, ey); g.stroke();
       const a = Math.atan2(ey - c, ex - c);
-      g.beginPath(); g.moveTo(ex, ey); g.lineTo(ex - 9 * Math.cos(a - 0.4), ey - 9 * Math.sin(a - 0.4)); g.lineTo(ex - 9 * Math.cos(a + 0.4), ey - 9 * Math.sin(a + 0.4)); g.closePath(); g.fill();
+      g.beginPath(); g.moveTo(ex, ey); g.lineTo(ex - 10 * k * Math.cos(a - 0.4), ey - 10 * k * Math.sin(a - 0.4)); g.lineTo(ex - 10 * k * Math.cos(a + 0.4), ey - 10 * k * Math.sin(a + 0.4)); g.closePath(); g.fill();
     }
-    g.fillStyle = css('--fg'); g.beginPath(); g.arc(c, c, 4, 0, Math.PI * 2); g.fill();
-    g.strokeStyle = css('--surface'); g.lineWidth = 1.5; g.stroke();
+    g.fillStyle = css('--tea'); g.beginPath(); g.arc(c, c, 6 * k, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = '#fff'; g.lineWidth = 2 * k; g.stroke();
   }
-
   function renderRadarStats(R) {
     if (!R) {
-      ['rNow','rNear','rMove','rAppr'].forEach(id => $(id).textContent = 'วิเคราะห์ไม่ได้');
-      $('rAge').textContent = state.frames.length ? fmtTime(state.frames[state.frames.length - 1].time) : '–';
-      return;
+      ['rNow','rNear','rMove','rAppr'].forEach(id => $(id).textContent = DEMO ? 'ตัวอย่าง' : 'วิเคราะห์ไม่ได้');
+      $('rAge').textContent = state.frames.length ? fmtTime(state.frames[state.frames.length - 1].time) : '–'; return;
     }
     $('rNow').textContent = R.rainingNow ? 'มีฝน' : 'ไม่มีฝน';
-    if (R.near) {
-      const km = R.near.d * KMPX, br = Core.bearingDeg(R.near.dx, R.near.dy);
-      $('rNear').textContent = km < 1.5 ? 'อยู่บนพิกัด' : `${km.toFixed(0)} กม. ทาง${Core.dirName(br)}`;
-    } else $('rNear').textContent = 'ไม่พบในรัศมี ~450 กม.';
+    if (R.near) { const km = R.near.d * KMPX, br = Core.bearingDeg(R.near.dx, R.near.dy);
+      $('rNear').textContent = km < 1.5 ? 'อยู่บนพิกัด' : `${km.toFixed(0)} กม. ทาง${Core.dirName(br)}`; }
+    else $('rNear').textContent = 'ไม่พบในรัศมี ~450 กม.';
     const spd = Math.hypot(R.vx, R.vy) * KMPX * 60;
-    if (R.source === 'none' || spd < 1) $('rMove').textContent = 'นิ่ง/ประเมินไม่ได้';
-    else $('rMove').textContent = `ไปทาง${Core.dirName(Core.bearingDeg(R.vx, R.vy))} ${spd.toFixed(0)} กม./ชม.` + (R.source === 'wind' ? ' (จากลมระดับ 700 hPa)' : '');
+    $('rMove').textContent = (R.source === 'none' || spd < 1) ? 'นิ่ง/ประเมินไม่ได้'
+      : `ไปทาง${Core.dirName(Core.bearingDeg(R.vx, R.vy))} ${spd.toFixed(0)} กม./ชม.` + (R.source === 'wind' ? ' (จากลมระดับ 700 hPa)' : '');
     if (R.near && spd >= 1) {
-      const toPt = { x: -R.near.dx, y: -R.near.dy }, dot = toPt.x * R.vx + toPt.y * R.vy;
-      const cos = dot / (Math.hypot(toPt.x, toPt.y) * Math.hypot(R.vx, R.vy) || 1);
+      const tx = -R.near.dx, ty = -R.near.dy, cos = (tx * R.vx + ty * R.vy) / (Math.hypot(tx, ty) * Math.hypot(R.vx, R.vy) || 1);
       const km = R.near.d * KMPX;
-      if (cos > 0.5) { const eta = km / spd * 60; $('rAppr').textContent = `กำลังเข้าหา ถึงราว ${Core.fmtLead(Math.max(5, Math.round(eta / 5) * 5))} ถ้าความเร็วคงที่`; }
-      else if (cos < -0.3) $('rAppr').textContent = 'กำลังออกห่าง';
-      else $('rAppr').textContent = 'เคลื่อนผ่านด้านข้าง';
+      $('rAppr').textContent = cos > 0.5 ? `กำลังเข้าหา ถึงราว ${Core.fmtLead(Math.max(5, Math.round(km / spd * 12) * 5))} ถ้าความเร็วคงที่`
+        : cos < -0.3 ? 'กำลังออกห่าง' : 'เคลื่อนผ่านด้านข้าง';
     } else $('rAppr').textContent = '–';
     $('rAge').textContent = `${fmtTime(R.last.time)} (${Math.round((Date.now() / 1000 - R.last.time) / 60)} นาทีก่อน)`;
   }
-
   function renderModels(models) {
     const tb = $('models'); tb.replaceChildren();
     if (!models || (!models.ens.length && !models.det.length)) { tb.innerHTML = '<tr><td>ดึงข้อมูลแบบจำลองไม่ได้</td></tr>'; return; }
-    const now = models.now, hours = [];
-    const base = Math.ceil(now / 3600) * 3600;
-    for (let k = 0; k < 5; k++) hours.push(base + k * 3600);
-    const head = document.createElement('tr');
-    head.innerHTML = '<th>แบบจำลอง</th>' + hours.map(h => `<th>${fmtTime(h)}</th>`).join('');
-    tb.appendChild(head);
-    for (const { m, j } of models.ens) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>Ensemble ${m.split('_')[0].toUpperCase()}</td>` + hours.map(h => {
-        const i = Core.hourIndexFor(j.hourly.time, h - 1); const e = i >= 0 ? Core.ensembleFrac(j.hourly, i) : null;
-        return e ? `<td class="${e.p >= 0.5 ? 'wet' : ''}">${Math.round(e.p * 100)}%</td>` : '<td>–</td>';
-      }).join('');
-      tb.appendChild(tr);
-    }
-    for (const { name, j } of models.det) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${name}</td>` + hours.map(h => {
-        const i = Core.hourIndexFor(j.hourly.time, h - 1); const v = i >= 0 ? j.hourly.precipitation[i] : null;
-        return v == null ? '<td>–</td>' : `<td class="${v >= 0.2 ? 'wet' : ''}">${v.toFixed(1)}</td>`;
-      }).join('');
-      tb.appendChild(tr);
-    }
+    const base = Math.ceil(models.now / 3600) * 3600, hours = [0, 1, 2, 3, 4].map(k => base + k * 3600);
+    tb.innerHTML = '<tr><th>แบบจำลอง</th>' + hours.map(h => `<th>${fmtTime(h)}</th>`).join('') + '</tr>' +
+      models.ens.map(({ m, j }) => `<tr><td>Ensemble ${m.split('_')[0].toUpperCase()}</td>` + hours.map(h => {
+        const i = Core.hourIndexFor(j.hourly.time, h - 1), e = i >= 0 ? Core.ensembleFrac(j.hourly, i) : null;
+        return e ? `<td class="${e.p >= 0.5 ? 'wet' : ''}">${Math.round(e.p * 100)}%</td>` : '<td>–</td>'; }).join('') + '</tr>').join('') +
+      models.det.map(({ name, j }) => `<tr><td>${name}</td>` + hours.map(h => {
+        const i = Core.hourIndexFor(j.hourly.time, h - 1), v = i >= 0 ? j.hourly.precipitation[i] : null;
+        return v == null ? '<td>–</td>' : `<td class="${v >= 0.2 ? 'wet' : ''}">${v.toFixed(1)}</td>`; }).join('') + '</tr>').join('');
   }
+
+  /* ---------- demo (sample data for previews, no network) ---------- */
+  function demoModels(curve) {
+    const now = Math.floor(Date.now() / 1000), base = Math.floor(now / 3600) * 3600, time = [-1, 0, 1, 2, 3, 4, 5, 6, 7].map(k => base + k * 3600);
+    const hourly = { time };
+    for (let m = 0; m < 20; m++) hourly['precipitation_member' + String(m).padStart(2, '0')] = curve.map(p => (m < p * 20 ? 0.6 : 0));
+    const det = DET_MODELS.map(([m, name], n) => ({ m, name, j: { hourly: { time, precipitation: curve.map(p => (p > 0.3 + n * 0.05 ? +(p * 2).toFixed(1) : 0)), precipitation_probability: curve.map(p => Math.round(p * 100)) } } }));
+    return { now, ens: ENS_MODELS.map(m => ({ m, j: { hourly } })), det, wind: null };
+  }
+  const DEMO_CURVES = { dry: [0, .05, .1, .1, .15, .2, .15, .1, .05], maybe: [0, .1, .2, .35, .45, .4, .3, .2, .1], wet: [0, .3, .6, .85, .9, .8, .6, .4, .2] };
 
   async function refresh() {
     if (state.busy) return; state.busy = true; $('refresh').disabled = true;
     const problems = [];
-    const [rad, mod] = await Promise.allSettled([loadRadar(), loadModels()]);
-    if (!basemap) loadBasemap().then(() => drawRadar(+$('frame').value));
-    state.frames = rad.status === 'fulfilled' ? rad.value : [];
-    state.models = mod.status === 'fulfilled' ? mod.value : null;
-    if (rad.status !== 'fulfilled') problems.push('ดึงเรดาร์ไม่ได้ ตัวเลขทั้งหมดมาจากแบบจำลอง');
-    else if (state.frames.length && !state.frames.some(f => f.mask)) problems.push('เบราว์เซอร์ไม่ให้อ่านพิกเซลเรดาร์ (CORS) จึงแสดงภาพได้แต่ไม่นำมาคำนวณ ตัวเลขมาจากแบบจำลองอย่างเดียว');
-    if (!state.models || (!state.models.ens.length && !state.models.det.length)) problems.push('ดึงข้อมูลแบบจำลองไม่ได้');
-    state.radar = analyseRadar(state.frames, state.models);
+    if (DEMO) {
+      state.models = demoModels(DEMO_CURVES[DEMO] || DEMO_CURVES.maybe); state.frames = []; state.radar = null;
+    } else {
+      const [rad, mod] = await Promise.allSettled([loadRadar(), loadModels()]);
+      if (!basemap) loadBasemap().then(() => drawRadar(+$('frame').value));
+      state.frames = rad.status === 'fulfilled' ? rad.value : [];
+      state.models = mod.status === 'fulfilled' ? mod.value : null;
+      if (rad.status !== 'fulfilled') problems.push('ดึงเรดาร์ไม่ได้ ตัวเลขทั้งหมดมาจากแบบจำลอง');
+      else if (state.frames.length && !state.frames.some(f => f.mask)) problems.push('อ่านพิกเซลเรดาร์ไม่ได้ ตัวเลขมาจากแบบจำลองอย่างเดียว');
+      if (!state.models || (!state.models.ens.length && !state.models.det.length)) problems.push('ดึงข้อมูลแบบจำลองไม่ได้');
+      state.radar = analyseRadar(state.frames, state.models);
+    }
     const slots = buildSlots(state.models, state.radar);
-    renderStrip(slots);
-    const v = Core.verdict(slots, state.radar && state.radar.rainingNow);
-    $('verdict').textContent = v.text; $('verdict').className = 'big ' + v.cls; $('verdictSub').textContent = v.sub;
-    $('updated').textContent = 'อัปเดต ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' · รีเฟรชเองทุก 10 นาที';
+    renderVerdict(slots, !!(state.radar && state.radar.rainingNow),
+      DEMO ? 'ข้อมูลตัวอย่าง' : 'อัปเดต ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' · รีเฟรชเองทุก 10 นาที');
+    renderHours(slots); renderStrip(slots);
     const fr = $('frame'); fr.max = Math.max(0, state.frames.length - 1); fr.value = fr.max;
     drawRadar(+fr.value); renderRadarStats(state.radar); renderModels(state.models);
     $('warn').hidden = !problems.length; $('warn').textContent = problems.join(' · ');
     state.busy = false; $('refresh').disabled = false;
   }
-
+  document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+    CROP = +b.dataset.crop;
+    document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+    drawRadar(+$('frame').value);
+  }));
   $('frame').addEventListener('input', e => drawRadar(+e.target.value));
   $('refresh').addEventListener('click', refresh);
+  $('details').addEventListener('toggle', () => drawRadar(+$('frame').value));
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => drawRadar(+$('frame').value));
   refresh();
-  setInterval(refresh, 10 * 60 * 1000);
+  if (!DEMO) setInterval(refresh, 10 * 60 * 1000);
 })();
 </script>
 </body>
