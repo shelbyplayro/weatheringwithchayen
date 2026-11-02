@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ฝนจะตกไหมชาเย็น</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@500;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one narrow column — verdict, 15-min strip, radar, model detail. Rain-slate neutrals, Thai-tea orange accent. */
+:root{
+  --bg:#eef2f5; --surface:#ffffff; --line:#d5dde4; --fg:#16232e; --muted:#5b6b78;
+  --tea:#d9661f; --tea-soft:#fbe3d1; --rain:#2f6fb3; --rain-soft:#d6e6f6; --dry:#5c8a5a;
+  --display:"Bai Jamjuree","IBM Plex Sans Thai",system-ui,sans-serif;
+  --body:"IBM Plex Sans Thai",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f161c; --surface:#17212a; --line:#2a3743; --fg:#e4ebf0; --muted:#93a3b0;
+  --tea:#f0884a; --tea-soft:#3a2416; --rain:#6aa8e8; --rain-soft:#1b3047; --dry:#8bbd88; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f161c; --surface:#17212a; --line:#2a3743; --fg:#e4ebf0; --muted:#93a3b0;
+  --tea:#f0884a; --tea-soft:#3a2416; --rain:#6aa8e8; --rain-soft:#1b3047; --dry:#8bbd88; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg)}
+body{margin:0;font:15px/1.6 var(--body)}
+.wrap{max-width:720px;margin:0 auto;padding-block:20px 40px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:18px}
+header{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+h1{font:700 1.5rem/1.2 var(--display);margin:0;text-wrap:balance}
+h1 span{color:var(--tea)}
+.coords{font:400 .78rem var(--mono);color:var(--muted)}
+.verdict{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:6px}
+.verdict .big{font:700 1.9rem/1.25 var(--display);text-wrap:balance}
+.verdict .big.wet{color:var(--rain)} .verdict .big.dry{color:var(--dry)} .verdict .big.maybe{color:var(--tea)}
+.verdict .sub{color:var(--muted)}
+.meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:.82rem;color:var(--muted)}
+button{font:500 .85rem var(--body);background:var(--tea);color:#fff;border:0;border-radius:8px;padding:6px 14px;cursor:pointer}
+button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+button[disabled]{opacity:.5;cursor:wait}
+section h2{font:700 1.05rem var(--display);margin:0 0 8px}
+.label{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.strip{display:grid;grid-template-columns:repeat(16,1fr);gap:3px;align-items:end;height:120px}
+.bar{position:relative;border-radius:4px 4px 0 0;background:var(--rain);min-height:3px}
+.bar.lo{background:var(--line)}
+.bar.mid{background:var(--tea)}
+.ticks{display:grid;grid-template-columns:repeat(16,1fr);gap:3px;font:400 .66rem var(--mono);color:var(--muted);margin-top:4px}
+.ticks span{grid-column:span 4;text-align:left;white-space:nowrap}
+.pcts{display:grid;grid-template-columns:repeat(16,1fr);gap:3px;font:500 .62rem var(--mono);color:var(--fg);margin-bottom:2px}
+.pcts span{text-align:center}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.78rem;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.radarbox{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:620px){.radarbox{grid-template-columns:minmax(0,1fr)}}
+canvas{width:100%;max-width:320px;aspect-ratio:1;border-radius:10px;border:1px solid var(--line);background:var(--surface);display:block}
+dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:.88rem}
+dt{color:var(--muted)} dd{margin:0;font-variant-numeric:tabular-nums}
+.scrub{display:flex;align-items:center;gap:8px;margin-top:8px;max-width:320px}
+.scrub input{flex:1;min-width:0}
+.scrub span{font:400 .75rem var(--mono);color:var(--muted)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;font:400 .8rem var(--mono);width:100%}
+th,td{padding:4px 6px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:500;color:var(--muted)}
+td.wet{color:var(--rain);font-weight:500}
+.note{font-size:.82rem;color:var(--muted);max-width:65ch}
+.warn{background:var(--tea-soft);border-radius:8px;padding:8px 12px;font-size:.85rem}
+footer{font-size:.75rem;color:var(--muted)}
+footer a{color:inherit}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>ฝนจะตกไหม<span>ชาเย็น</span></h1>
+    <div class="coords" id="coords"></div>
+  </header>
+
+  <div class="verdict" aria-live="polite">
+    <div class="label">อีก 4 ชั่วโมงข้างหน้า</div>
+    <div class="big" id="verdict">กำลังดึงข้อมูล…</div>
+    <div class="sub" id="verdictSub"></div>
+    <div class="meta"><span id="updated"></span><button id="refresh" type="button">อัปเดตตอนนี้</button></div>
+  </div>
+  <div class="warn" id="warn" hidden></div>
+
+  <section>
+    <h2>โอกาสฝนทุก 15 นาที</h2>
+    <div class="pcts" id="pcts"></div>
+    <div class="strip" id="strip" role="img" aria-label="กราฟโอกาสฝนรายช่วง 15 นาที"></div>
+    <div class="ticks" id="ticks"></div>
+    <div class="legend">
+      <span><i style="background:var(--line)"></i>ต่ำกว่า 30%</span>
+      <span><i style="background:var(--tea)"></i>30–59%</span>
+      <span><i style="background:var(--rain)"></i>60% ขึ้นไป</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>เรดาร์ฝนรอบพิกัด</h2>
+    <div class="radarbox">
+      <div>
+        <canvas id="radar" width="320" height="320"></canvas>
+        <div class="scrub"><input id="frame" type="range" min="0" max="0" value="0" aria-label="เลือกเวลาภาพเรดาร์"><span id="frameTime">–</span></div>
+      </div>
+      <dl id="radarStats">
+        <dt>ฝนที่พิกัดตอนนี้</dt><dd id="rNow">–</dd>
+        <dt>ฝนใกล้สุด</dt><dd id="rNear">–</dd>
+        <dt>กลุ่มฝนเคลื่อนที่</dt><dd id="rMove">–</dd>
+        <dt>ทิศทางเทียบพิกัด</dt><dd id="rAppr">–</dd>
+        <dt>ภาพล่าสุด</dt><dd id="rAge">–</dd>
+      </dl>
+    </div>
+    <p class="note">วงกลมคือรัศมี 10, 25 และ 50 กม. ลูกศรสีส้มคือทิศที่กลุ่มฝนเคลื่อนไปใน 1 ชั่วโมง ภาพเรดาร์ละเอียดราว 1.2 กม./พิกเซล</p>
+  </section>
+
+  <section>
+    <h2>แบบจำลองพยากรณ์รายชั่วโมง</h2>
+    <div class="tablewrap"><table id="models"></table></div>
+    <p class="note">ช่อง "Ensemble" คือสัดส่วนสมาชิกที่ให้ฝน ≥0.1 มม./ชม. ช่องแบบจำลองเดี่ยวแสดงปริมาณฝน (มม.) ในชั่วโมงที่สิ้นสุดเวลานั้น</p>
+  </section>
+
+  <section>
+    <h2>วิธีคิดตัวเลข</h2>
+    <p class="note">ชั่วโมงแรกเชื่อเรดาร์เป็นหลัก: หาความเร็วกลุ่มฝนจากภาพย้อนหลัง 30 นาที แล้วดูว่าฝนที่อยู่ต้นทางจะเลื่อนมาถึงพิกัดเมื่อไร ยิ่งไกลออกไปน้ำหนักเรดาร์ยิ่งลด และหมดลงที่ 2 ชั่วโมง ส่วนที่เหลือมาจากแบบจำลอง: ensemble ของ ECMWF, GFS และ ICON รวมกับแบบจำลองเดี่ยวหลายสำนัก ฝนพาความร้อนที่ก่อตัวใหม่ เรดาร์จะยังไม่เห็นจนกว่าเมฆจะก่อตัว ช่วงบ่ายตัวเลขจึงพึ่งแบบจำลองมากกว่า</p>
+  </section>
+
+  <footer>
+    ข้อมูลเรดาร์: <a href="https://www.rainviewer.com" target="_blank" rel="noopener">Weather data by RainViewer</a> ·
+    แบบจำลอง: <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a> (CC BY 4.0) ·
+    แผนที่: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors
+  </footer>
+</div>
+
+<script>
+/* ===== Core (pure functions; testable in node) ===== */
+const Core = (() => {
+  const Z = 7, TS = 256;
+  function lonLatToPx(lon, lat, z = Z) {
+    const n = TS * 2 ** z;
+    const x = (lon + 180) / 360 * n;
+    const s = Math.sin(lat * Math.PI / 180);
+    const y = (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * n;
+    return { x, y };
+  }
+  function kmPerPx(lat, z = Z) { return 156.543034 * Math.cos(lat * Math.PI / 180) / 2 ** z; }
+
+  // mask: Uint8Array w*h of 0/1 rain. Returns best shift (dx,dy) in px of B relative to A, plus confidence.
+  function estimateMotion(A, B, w, h, cx, cy, half = 150, maxShift = 12, step = 2) {
+    let count = 0;
+    for (let y = cy - half; y < cy + half; y += step) for (let x = cx - half; x < cx + half; x += step)
+      if (y >= 0 && y < h && x >= 0 && x < w && A[y * w + x]) count++;
+    if (count < 40) return { dx: 0, dy: 0, conf: 0, count };
+    let best = null, scores = [];
+    for (let dy = -maxShift; dy <= maxShift; dy++) for (let dx = -maxShift; dx <= maxShift; dx++) {
+      let match = 0, miss = 0;
+      for (let y = cy - half; y < cy + half; y += step) {
+        const yb = y + dy; if (y < 0 || y >= h || yb < 0 || yb >= h) continue;
+        for (let x = cx - half; x < cx + half; x += step) {
+          const xb = x + dx; if (x < 0 || x >= w || xb < 0 || xb >= w) continue;
+          const a = A[y * w + x], b = B[yb * w + xb];
+          if (a && b) match++; else if (a || b) miss++;
+        }
+      }
+      const s = match / (match + miss || 1);
+      scores.push(s);
+      if (!best || s > best.s) best = { dx, dy, s };
+    }
+    const mean = scores.reduce((p, c) => p + c, 0) / scores.length;
+    const conf = Math.max(0, Math.min(1, (best.s - mean) / Math.max(best.s, 1e-6)));
+    return { dx: best.dx, dy: best.dy, conf, count, score: best.s };
+  }
+
+  function fracInDisk(M, w, h, x, y, r) {
+    let n = 0, k = 0; const r2 = r * r;
+    for (let j = Math.floor(y - r); j <= Math.ceil(y + r); j++) for (let i = Math.floor(x - r); i <= Math.ceil(x + r); i++) {
+      if ((i - x) ** 2 + (j - y) ** 2 > r2) continue;
+      if (i < 0 || j < 0 || i >= w || j >= h) continue;
+      n++; k += M[j * w + i];
+    }
+    return n ? k / n : null;
+  }
+
+  // Probability from advecting the latest mask: for lead t (min), sample upstream at p - v*t.
+  function radarProb(M, w, h, px, py, vx, vy, tMin, confidence) {
+    const spread = 2.5 + tMin / 12 * (1.5 - confidence); // grows with lead time, faster when motion is uncertain
+    const f = fracInDisk(M, w, h, px - vx * tMin, py - vy * tMin, spread);
+    if (f == null) return null;
+    return Math.min(1, f * 1.15);
+  }
+
+  function nearestRain(M, w, h, px, py, maxR = 380) {
+    let best = null;
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+      if (!M[j * w + i]) continue;
+      const d2 = (i - px) ** 2 + (j - py) ** 2;
+      if (d2 <= maxR * maxR && (!best || d2 < best.d2)) best = { i, j, d2 };
+    }
+    return best ? { dx: best.i - px, dy: best.j - py, d: Math.sqrt(best.d2) } : null;
+  }
+
+  function bearingDeg(dx, dy) { // screen px: +x east, +y south
+    return (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
+  }
+  const DIRS = ['เหนือ','ตะวันออกเฉียงเหนือ','ตะวันออก','ตะวันออกเฉียงใต้','ใต้','ตะวันตกเฉียงใต้','ตะวันตก','ตะวันตกเฉียงเหนือ'];
+  function dirName(deg) { return DIRS[Math.round(deg / 45) % 8]; }
+
+  // Open-Meteo: hourly arrays keyed by name; precipitation at time T covers [T-1h, T].
+  function hourIndexFor(times, tSec) { for (let i = 0; i < times.length; i++) if (times[i] > tSec) return i; return -1; }
+
+  function ensembleFrac(hourly, idx, thr = 0.1) {
+    let n = 0, k = 0;
+    for (const key in hourly) {
+      if (!key.startsWith('precipitation') || key.startsWith('precipitation_probability')) continue;
+      const v = hourly[key][idx]; if (v == null || Number.isNaN(v)) continue;
+      n++; if (v >= thr) k++;
+    }
+    return n ? { p: k / n, n } : null;
+  }
+
+  // Wind at 700 hPa (km/h, meteorological "from" direction) -> steering in px/min
+  function steeringFromWind(speedKmh, dirFromDeg, lat) {
+    const toRad = (dirFromDeg + 180) * Math.PI / 180;
+    const kmPerMin = speedKmh * 0.8 / 60;
+    const ppm = kmPerMin / kmPerPx(lat);
+    return { vx: Math.sin(toRad) * ppm, vy: -Math.cos(toRad) * ppm };
+  }
+
+  function radarWeight(tMin) { return tMin >= 120 ? 0 : (1 - tMin / 120) ** 1.2; }
+
+  function blend(slots) { // slots: [{t, radar|null, model|null}]
+    return slots.map(s => {
+      let p;
+      if (s.radar == null && s.model == null) p = null;
+      else if (s.radar == null) p = s.model;
+      else if (s.model == null) p = s.radar;
+      else { const w = radarWeight(s.t); p = w * s.radar + (1 - w) * s.model; }
+      return { ...s, p };
+    });
+  }
+
+  function verdict(slots, rainingNow) {
+    const valid = slots.filter(s => s.p != null);
+    if (!valid.length) return { cls: '', text: 'ยังไม่มีข้อมูล', sub: '' };
+    if (rainingNow) return { cls: 'wet', text: 'ฝนกำลังตกที่พิกัดนี้', sub: 'เรดาร์ล่าสุดเห็นฝนอยู่บนพิกัดนี้' };
+    const first = valid.find(s => s.p >= 0.5);
+    const max = valid.reduce((a, b) => (b.p > a.p ? b : a));
+    if (first) return { cls: 'wet', text: first.t <= 15 ? 'ฝนน่าจะมาในไม่ถึง 15 นาที' : `ฝนน่าจะมาในอีกราว ${fmtLead(first.t)}`, sub: `โอกาสสูงสุด ${Math.round(max.p * 100)}% ช่วง ${max.label}`, first };
+    if (max.p >= 0.25) return { cls: 'maybe', text: 'มีโอกาสฝนบ้าง', sub: `สูงสุด ${Math.round(max.p * 100)}% ช่วง ${max.label}` };
+    return { cls: 'dry', text: '4 ชั่วโมงนี้น่าจะไม่มีฝน', sub: `โอกาสสูงสุด ${Math.round(max.p * 100)}% ช่วง ${max.label}` };
+  }
+  function fmtLead(t) { if (t < 60) return `${t} นาที`; const h = Math.floor(t / 60), m = t % 60; return m ? `${h} ชม. ${m} นาที` : `${h} ชั่วโมง`; }
+
+  return { Z, TS, lonLatToPx, kmPerPx, estimateMotion, fracInDisk, radarProb, nearestRain, bearingDeg, dirName,
+    hourIndexFor, ensembleFrac, steeringFromWind, radarWeight, blend, verdict, fmtLead };
+})();
+if (typeof module !== 'undefined') module.exports = Core;
+
+/* ===== App (browser) ===== */
+if (typeof window !== 'undefined') (() => {
+  const qs = new URLSearchParams(location.search);
+  const LAT = parseFloat(qs.get('lat')) || 9.016269177096914;
+  const LON = parseFloat(qs.get('lon')) || 98.96555947723334;
+  const $ = id => document.getElementById(id);
+  $('coords').textContent = `${LAT.toFixed(5)}, ${LON.toFixed(5)}`;
+
+  const SLOT_MIN = 15, NSLOT = 16;
+  const ENS_MODELS = ['ecmwf_ifs025', 'gfs025', 'icon_seamless'];
+  const DET_MODELS = [['ecmwf_ifs025','ECMWF'],['gfs_seamless','GFS'],['icon_seamless','ICON'],['jma_seamless','JMA'],['gem_seamless','GEM'],['cma_grapes_global','CMA']];
+  const OM = 'https://api.open-meteo.com/v1/forecast';
+  const OME = 'https://ensemble-api.open-meteo.com/v1/ensemble';
+  const fmtTime = s => new Date(s * 1000).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
+
+  const state = { frames: [], masks: [], imgs: [], radar: null, models: null, busy: false };
+  const P = Core.lonLatToPx(LON, LAT);
+  const tileX0 = Math.floor(P.x / 256) - 1, tileY0 = Math.floor(P.y / 256) - 1;
+  const W = 768, H = 768, px = P.x - tileX0 * 256, py = P.y - tileY0 * 256;
+  const KMPX = Core.kmPerPx(LAT);
+
+  async function getJSON(url) { const r = await fetch(url); if (!r.ok) throw new Error(`${r.status} ${url}`); return r.json(); }
+  function loadImg(src, cors) {
+    return new Promise((res, rej) => { const im = new Image(); if (cors) im.crossOrigin = 'anonymous'; im.onload = () => res(im); im.onerror = () => rej(new Error('img ' + src)); im.src = src; });
+  }
+
+  async function loadFrame(host, path) {
+    const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+    let tainted = false;
+    const jobs = [];
+    for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) {
+      const url = `${host}${path}/256/${Core.Z}/${tileX0 + i}/${tileY0 + j}/2/0_0.png`;
+      jobs.push(loadImg(url, true).catch(() => { tainted = true; return loadImg(url, false); })
+        .then(im => g.drawImage(im, i * 256, j * 256)).catch(() => {}));
+    }
+    await Promise.all(jobs);
+    let mask = null;
+    if (!tainted) {
+      try {
+        const d = g.getImageData(0, 0, W, H).data; mask = new Uint8Array(W * H);
+        for (let k = 0; k < W * H; k++) mask[k] = d[k * 4 + 3] > 60 ? 1 : 0;
+      } catch (e) { mask = null; }
+    }
+    return { canvas: c, mask };
+  }
+
+  let basemap = null;
+  async function loadBasemap() {
+    const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+    const jobs = [];
+    for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++)
+      jobs.push(loadImg(`https://tile.openstreetmap.org/${Core.Z}/${tileX0 + i}/${tileY0 + j}.png`, false)
+        .then(im => g.drawImage(im, i * 256, j * 256)).catch(() => {}));
+    await Promise.all(jobs); basemap = c;
+  }
+
+  async function loadRadar() {
+    const meta = await getJSON('https://api.rainviewer.com/public/weather-maps.json');
+    const past = (meta.radar && meta.radar.past || []).slice(-12);
+    const frames = await Promise.all(past.map(f => loadFrame(meta.host, f.path).then(fr => ({ ...fr, time: f.time }))));
+    return frames;
+  }
+
+  async function loadModels() {
+    const now = Math.floor(Date.now() / 1000);
+    const ens = await Promise.allSettled(ENS_MODELS.map(m =>
+      getJSON(`${OME}?latitude=${LAT}&longitude=${LON}&hourly=precipitation&models=${m}&forecast_hours=7&past_hours=1&timeformat=unixtime`).then(j => ({ m, j }))));
+    const det = await Promise.allSettled(DET_MODELS.map(([m, name]) =>
+      getJSON(`${OM}?latitude=${LAT}&longitude=${LON}&hourly=precipitation,precipitation_probability&models=${m}&forecast_hours=7&past_hours=1&timeformat=unixtime`).then(j => ({ m, name, j }))));
+    const wind = await getJSON(`${OM}?latitude=${LAT}&longitude=${LON}&current=precipitation&hourly=wind_speed_700hPa,wind_direction_700hPa&forecast_hours=2&timeformat=unixtime`).catch(() => null);
+    return { now, ens: ens.filter(r => r.status === 'fulfilled').map(r => r.value), det: det.filter(r => r.status === 'fulfilled').map(r => r.value), wind };
+  }
+
+  function modelProbAt(models, tSec) {
+    const parts = [];
+    for (const { j } of models.ens) {
+      const i = Core.hourIndexFor(j.hourly.time, tSec); if (i < 0) continue;
+      const e = Core.ensembleFrac(j.hourly, i); if (e) parts.push({ p: e.p, w: 2 });
+    }
+    let dk = 0, dn = 0, pp = [];
+    for (const { j } of models.det) {
+      const i = Core.hourIndexFor(j.hourly.time, tSec); if (i < 0) continue;
+      const v = j.hourly.precipitation[i]; if (v != null) { dn++; if (v >= 0.2) dk++; }
+      const q = j.hourly.precipitation_probability && j.hourly.precipitation_probability[i];
+      if (q != null) pp.push(q / 100);
+    }
+    if (dn) parts.push({ p: dk / dn, w: 1.5 });
+    if (pp.length) parts.push({ p: pp.reduce((a, b) => a + b, 0) / pp.length, w: 1 });
+    if (!parts.length) return null;
+    return parts.reduce((a, b) => a + b.p * b.w, 0) / parts.reduce((a, b) => a + b.w, 0);
+  }
+
+  function analyseRadar(frames, models) {
+    const ok = frames.filter(f => f.mask);
+    if (ok.length < 2) return null;
+    const last = ok[ok.length - 1];
+    // motion from up to two pairs spanning ~30 min
+    const pairs = [];
+    for (const back of [3, 2]) {
+      const a = ok[ok.length - 1 - back]; if (!a) continue;
+      const dt = (last.time - a.time) / 60; if (dt <= 0) continue;
+      const m = Core.estimateMotion(a.mask, last.mask, W, H, Math.round(px), Math.round(py), 150, 14, 2);
+      if (m.conf > 0) pairs.push({ vx: m.dx / dt, vy: m.dy / dt, conf: m.conf, count: m.count });
+    }
+    let vx = 0, vy = 0, conf = 0, source = 'none';
+    if (pairs.length) {
+      const sw = pairs.reduce((a, b) => a + b.conf, 0);
+      vx = pairs.reduce((a, b) => a + b.vx * b.conf, 0) / sw; vy = pairs.reduce((a, b) => a + b.vy * b.conf, 0) / sw;
+      conf = Math.min(1, sw / pairs.length * 2); source = 'radar';
+    }
+    if (conf < 0.25 && models && models.wind && models.wind.hourly) {
+      const h = models.wind.hourly, i = Math.max(0, Core.hourIndexFor(h.time, models.now) - 1);
+      const sp = h.wind_speed_700hPa[i], dr = h.wind_direction_700hPa[i];
+      if (sp != null && dr != null) { const s = Core.steeringFromWind(sp, dr, LAT); vx = s.vx; vy = s.vy; conf = 0.3; source = 'wind'; }
+    }
+    const atPoint = Core.fracInDisk(last.mask, W, H, px, py, 1.5);
+    const near = Core.nearestRain(last.mask, W, H, px, py);
+    return { last, vx, vy, conf, source, rainingNow: atPoint != null && atPoint >= 0.5, near };
+  }
+
+  function buildSlots(models, radar) {
+    const now = Date.now() / 1000;
+    const start = Math.ceil(now / 900) * 900;
+    const radarAge = radar ? (now - radar.last.time) / 60 : 0;
+    const slots = [];
+    for (let k = 0; k < NSLOT; k++) {
+      const tSec = start + k * 900, t = Math.round((tSec - now) / 60);
+      let r = null;
+      if (radar && t + radarAge < 125) r = Core.radarProb(radar.last.mask, W, H, px, py, radar.vx, radar.vy, t + radarAge, radar.conf);
+      const m = models ? modelProbAt(models, tSec) : null;
+      slots.push({ t: Math.max(0, t), tSec, label: fmtTime(tSec), radar: r, model: m });
+    }
+    return Core.blend(slots);
+  }
+
+  function renderStrip(slots) {
+    const strip = $('strip'), ticks = $('ticks'), pcts = $('pcts');
+    strip.replaceChildren(); ticks.replaceChildren(); pcts.replaceChildren();
+    slots.forEach((s, k) => {
+      const b = document.createElement('div');
+      const p = s.p == null ? 0 : s.p;
+      b.className = 'bar ' + (p >= 0.6 ? '' : p >= 0.3 ? 'mid' : 'lo');
+      b.style.height = Math.max(3, p * 100) + '%';
+      b.title = `${s.label} · ${s.p == null ? 'ไม่มีข้อมูล' : Math.round(p * 100) + '%'}` +
+        (s.radar != null ? ` · เรดาร์ ${Math.round(s.radar * 100)}%` : '') + (s.model != null ? ` · แบบจำลอง ${Math.round(s.model * 100)}%` : '');
+      strip.appendChild(b);
+      const pc = document.createElement('span'); pc.textContent = s.p == null ? '' : Math.round(p * 100); pcts.appendChild(pc);
+      if (k % 4 === 0) { const tk = document.createElement('span'); tk.textContent = s.label; ticks.appendChild(tk); }
+    });
+  }
+
+  function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+  const CROP = 300;
+  function drawRadar(idx) {
+    const cv = $('radar'), g = cv.getContext('2d'), S = cv.width;
+    g.fillStyle = css('--surface'); g.fillRect(0, 0, S, S);
+    const sx = px - CROP / 2, sy = py - CROP / 2;
+    if (basemap) { g.globalAlpha = 0.55; g.drawImage(basemap, sx, sy, CROP, CROP, 0, 0, S, S); g.globalAlpha = 1; }
+    const f = state.frames[idx];
+    if (f) { g.globalAlpha = 0.9; g.drawImage(f.canvas, sx, sy, CROP, CROP, 0, 0, S, S); g.globalAlpha = 1; $('frameTime').textContent = fmtTime(f.time); }
+    const sc = S / CROP, c = S / 2;
+    g.strokeStyle = css('--muted'); g.lineWidth = 1; g.setLineDash([3, 4]);
+    for (const km of [10, 25, 50]) { g.beginPath(); g.arc(c, c, km / KMPX * sc, 0, Math.PI * 2); g.stroke(); }
+    g.setLineDash([]);
+    const R = state.radar;
+    if (R && (R.vx || R.vy)) {
+      const ex = c + R.vx * 60 * sc, ey = c + R.vy * 60 * sc;
+      g.strokeStyle = css('--tea'); g.fillStyle = css('--tea'); g.lineWidth = 2.5;
+      g.beginPath(); g.moveTo(c, c); g.lineTo(ex, ey); g.stroke();
+      const a = Math.atan2(ey - c, ex - c);
+      g.beginPath(); g.moveTo(ex, ey); g.lineTo(ex - 9 * Math.cos(a - 0.4), ey - 9 * Math.sin(a - 0.4)); g.lineTo(ex - 9 * Math.cos(a + 0.4), ey - 9 * Math.sin(a + 0.4)); g.closePath(); g.fill();
+    }
+    g.fillStyle = css('--fg'); g.beginPath(); g.arc(c, c, 4, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = css('--surface'); g.lineWidth = 1.5; g.stroke();
+  }
+
+  function renderRadarStats(R) {
+    if (!R) {
+      ['rNow','rNear','rMove','rAppr'].forEach(id => $(id).textContent = 'วิเคราะห์ไม่ได้');
+      $('rAge').textContent = state.frames.length ? fmtTime(state.frames[state.frames.length - 1].time) : '–';
+      return;
+    }
+    $('rNow').textContent = R.rainingNow ? 'มีฝน' : 'ไม่มีฝน';
+    if (R.near) {
+      const km = R.near.d * KMPX, br = Core.bearingDeg(R.near.dx, R.near.dy);
+      $('rNear').textContent = km < 1.5 ? 'อยู่บนพิกัด' : `${km.toFixed(0)} กม. ทาง${Core.dirName(br)}`;
+    } else $('rNear').textContent = 'ไม่พบในรัศมี ~450 กม.';
+    const spd = Math.hypot(R.vx, R.vy) * KMPX * 60;
+    if (R.source === 'none' || spd < 1) $('rMove').textContent = 'นิ่ง/ประเมินไม่ได้';
+    else $('rMove').textContent = `ไปทาง${Core.dirName(Core.bearingDeg(R.vx, R.vy))} ${spd.toFixed(0)} กม./ชม.` + (R.source === 'wind' ? ' (จากลมระดับ 700 hPa)' : '');
+    if (R.near && spd >= 1) {
+      const toPt = { x: -R.near.dx, y: -R.near.dy }, dot = toPt.x * R.vx + toPt.y * R.vy;
+      const cos = dot / (Math.hypot(toPt.x, toPt.y) * Math.hypot(R.vx, R.vy) || 1);
+      const km = R.near.d * KMPX;
+      if (cos > 0.5) { const eta = km / spd * 60; $('rAppr').textContent = `กำลังเข้าหา ถึงราว ${Core.fmtLead(Math.max(5, Math.round(eta / 5) * 5))} ถ้าความเร็วคงที่`; }
+      else if (cos < -0.3) $('rAppr').textContent = 'กำลังออกห่าง';
+      else $('rAppr').textContent = 'เคลื่อนผ่านด้านข้าง';
+    } else $('rAppr').textContent = '–';
+    $('rAge').textContent = `${fmtTime(R.last.time)} (${Math.round((Date.now() / 1000 - R.last.time) / 60)} นาทีก่อน)`;
+  }
+
+  function renderModels(models) {
+    const tb = $('models'); tb.replaceChildren();
+    if (!models || (!models.ens.length && !models.det.length)) { tb.innerHTML = '<tr><td>ดึงข้อมูลแบบจำลองไม่ได้</td></tr>'; return; }
+    const now = models.now, hours = [];
+    const base = Math.ceil(now / 3600) * 3600;
+    for (let k = 0; k < 5; k++) hours.push(base + k * 3600);
+    const head = document.createElement('tr');
+    head.innerHTML = '<th>แบบจำลอง</th>' + hours.map(h => `<th>${fmtTime(h)}</th>`).join('');
+    tb.appendChild(head);
+    for (const { m, j } of models.ens) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>Ensemble ${m.split('_')[0].toUpperCase()}</td>` + hours.map(h => {
+        const i = Core.hourIndexFor(j.hourly.time, h - 1); const e = i >= 0 ? Core.ensembleFrac(j.hourly, i) : null;
+        return e ? `<td class="${e.p >= 0.5 ? 'wet' : ''}">${Math.round(e.p * 100)}%</td>` : '<td>–</td>';
+      }).join('');
+      tb.appendChild(tr);
+    }
+    for (const { name, j } of models.det) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${name}</td>` + hours.map(h => {
+        const i = Core.hourIndexFor(j.hourly.time, h - 1); const v = i >= 0 ? j.hourly.precipitation[i] : null;
+        return v == null ? '<td>–</td>' : `<td class="${v >= 0.2 ? 'wet' : ''}">${v.toFixed(1)}</td>`;
+      }).join('');
+      tb.appendChild(tr);
+    }
+  }
+
+  async function refresh() {
+    if (state.busy) return; state.busy = true; $('refresh').disabled = true;
+    const problems = [];
+    const [rad, mod] = await Promise.allSettled([loadRadar(), loadModels()]);
+    if (!basemap) loadBasemap().then(() => drawRadar(+$('frame').value));
+    state.frames = rad.status === 'fulfilled' ? rad.value : [];
+    state.models = mod.status === 'fulfilled' ? mod.value : null;
+    if (rad.status !== 'fulfilled') problems.push('ดึงเรดาร์ไม่ได้ ตัวเลขทั้งหมดมาจากแบบจำลอง');
+    else if (state.frames.length && !state.frames.some(f => f.mask)) problems.push('เบราว์เซอร์ไม่ให้อ่านพิกเซลเรดาร์ (CORS) จึงแสดงภาพได้แต่ไม่นำมาคำนวณ ตัวเลขมาจากแบบจำลองอย่างเดียว');
+    if (!state.models || (!state.models.ens.length && !state.models.det.length)) problems.push('ดึงข้อมูลแบบจำลองไม่ได้');
+    state.radar = analyseRadar(state.frames, state.models);
+    const slots = buildSlots(state.models, state.radar);
+    renderStrip(slots);
+    const v = Core.verdict(slots, state.radar && state.radar.rainingNow);
+    $('verdict').textContent = v.text; $('verdict').className = 'big ' + v.cls; $('verdictSub').textContent = v.sub;
+    $('updated').textContent = 'อัปเดต ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' · รีเฟรชเองทุก 10 นาที';
+    const fr = $('frame'); fr.max = Math.max(0, state.frames.length - 1); fr.value = fr.max;
+    drawRadar(+fr.value); renderRadarStats(state.radar); renderModels(state.models);
+    $('warn').hidden = !problems.length; $('warn').textContent = problems.join(' · ');
+    state.busy = false; $('refresh').disabled = false;
+  }
+
+  $('frame').addEventListener('input', e => drawRadar(+e.target.value));
+  $('refresh').addEventListener('click', refresh);
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => drawRadar(+$('frame').value));
+  refresh();
+  setInterval(refresh, 10 * 60 * 1000);
+})();
+</script>
+</body>
+</html>
