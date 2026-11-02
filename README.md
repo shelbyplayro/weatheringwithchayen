@@ -34,3 +34,15 @@ Settings → Pages → Source: Deploy from a branch → Branch: `main` / `(root)
 ## เครดิตข้อมูล
 
 Weather data by [RainViewer](https://www.rainviewer.com) · [Open-Meteo](https://open-meteo.com) (CC BY 4.0) · © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors
+
+## บันทึกความแม่นยำอัตโนมัติ
+
+`.github/workflows/chayen-log.yml` รันทุก 20 นาทีบน GitHub Actions เรียก `tools/log.mjs` ซึ่งใช้สูตรเดียวกับหน้าเว็บ (อ่านจาก `index.html` โดยตรง) แล้วเขียนผลลง branch `data`:
+
+| ไฟล์ | เนื้อหา |
+|---|---|
+| `forecasts.csv` | พยากรณ์ 16 ช่วง × 15 นาทีของแต่ละรอบ แยกค่ารวม ค่าเรดาร์ และค่าแบบจำลอง |
+| `observed.csv` | ภาพเรดาร์ทุก 10 นาที: มีฝนบนจุดสวนหรือไม่ และสัดส่วนฝนในรัศมี 1 กม. และ 5 กม. |
+| `verify.json` | Brier score, skill เทียบค่าเฉลี่ย, แยกตามระยะเวลาล่วงหน้า และตาราง reliability |
+
+ค่าจริงที่ใช้ตัดสินคือเรดาร์ตรงสวน: ช่วง 15 นาทีนับว่า "ฝนตก" ถ้ามีภาพเรดาร์อย่างน้อยหนึ่งภาพในช่วงนั้นเห็นฝน
