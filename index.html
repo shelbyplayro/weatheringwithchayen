@@ -12,6 +12,7 @@
 :root{
   --mono:"IBM Plex Mono",ui-monospace,monospace;
   --tea:#e07b39; --rain:#3b82c4; --dry:#4f9a5a; --maybe:#e0a020;
+  --acc1:rgba(120,190,255,.75); --acc2:rgba(40,120,230,.8); --acc3:rgba(110,60,200,.85);
   --dog:#e9a066; --ear:#b9693a; --muzzle:#fff1e0; --ink:#2b2b3a; --blush:#ff8fa0; --coat:#ffd23f;
   color-scheme:light;
 }
@@ -47,6 +48,7 @@
   --shadow:0 6px 24px rgba(0,0,0,.35); --lo:#2a3441; --rain:#6aaaf0; color-scheme:dark}}
 
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{background:var(--bg);color:var(--fg)}
 body{margin:0;font:16px/1.55 var(--body)}
 :root[data-style="doodle"] body{
@@ -113,6 +115,12 @@ canvas{width:100%;aspect-ratio:1;border-radius:14px;border:var(--bw) solid var(-
 .seg button{font:500 .8rem var(--body);color:var(--muted);background:transparent;border:0;border-radius:10px;padding:8px 4px;cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .seg button:focus-visible{outline:2px solid var(--tea)}
+.mapcard{display:flex;flex-direction:column;gap:12px}
+.mapcard h2{margin:0}
+.seg.two{grid-template-columns:repeat(2,1fr)}
+.pastsum{background:var(--surface2);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.pastsum .big{font:600 1.05rem/1.4 var(--display)}
+.pastsum .sub{font-size:.88rem}
 .scrub{display:flex;align-items:center;gap:8px}
 .scrub input{flex:1;min-width:0;accent-color:var(--tea)}
 .scrub span{font:400 .75rem var(--mono);color:var(--muted)}
@@ -168,16 +176,32 @@ footer a{color:inherit}
     <div class="key"><span><i style="background:var(--lo)"></i>ต่ำกว่า 30%</span><span><i style="background:var(--tea)"></i>30–59%</span><span><i style="background:var(--rain)"></i>60% ขึ้นไป</span></div>
   </div>
 
+  <div class="card mapcard">
+    <h2>แผนที่ฝนรอบสวน</h2>
+    <div class="seg two" role="group" aria-label="เลือกชั้นข้อมูล" id="modeSeg">
+      <button type="button" data-mode="past" aria-pressed="true">ตกไปแล้ว 2 ชม.</button>
+      <button type="button" data-mode="now">ฝนตอนนี้</button>
+    </div>
+    <canvas id="radar" width="640" height="640" role="img" aria-label="แผนที่เรดาร์ฝนรอบพิกัด"></canvas>
+    <div class="seg" role="group" aria-label="ระยะมองเรดาร์" id="zoomSeg">
+      <button type="button" data-crop="110">ใกล้ ~130 กม.</button>
+      <button type="button" data-crop="180" aria-pressed="true">กลาง ~220 กม.</button>
+      <button type="button" data-crop="300">ไกล ~360 กม.</button>
+    </div>
+    <div class="scrub" id="scrubRow" hidden><input id="frame" type="range" min="0" max="0" value="0" aria-label="เลือกเวลาภาพเรดาร์"><span id="frameTime">–</span></div>
+    <div class="key" id="pastKey">
+      <span><i style="background:var(--acc1)"></i>10–20 นาที</span><span><i style="background:var(--acc2)"></i>30–50 นาที</span><span><i style="background:var(--acc3)"></i>1 ชม. ขึ้นไป</span>
+    </div>
+    <div class="pastsum" id="pastSum">
+      <div class="big" id="pAtFarm">–</div>
+      <div id="pAround" class="sub"></div>
+    </div>
+    <p class="note">วงกลมคือรัศมี 10, 25 และ 50 กม. จุดส้มคือสวน สีบนแผนที่บอกว่าแต่ละจุดมีฝนรวมกี่นาทีใน 2 ชั่วโมงที่ผ่านมา (จากภาพเรดาร์ทุก 10 นาที)</p>
+  </div>
+
   <details class="card" id="details">
-    <summary>เรดาร์และรายละเอียด <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <summary>รายละเอียดเรดาร์และแบบจำลอง <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></summary>
     <div class="detail-body">
-      <div class="seg" role="group" aria-label="ระยะมองเรดาร์">
-        <button type="button" data-crop="110">ใกล้ ~130 กม.</button>
-        <button type="button" data-crop="180" aria-pressed="true">กลาง ~220 กม.</button>
-        <button type="button" data-crop="300">ไกล ~360 กม.</button>
-      </div>
-      <canvas id="radar" width="640" height="640"></canvas>
-      <div class="scrub"><input id="frame" type="range" min="0" max="0" value="0" aria-label="เลือกเวลาภาพเรดาร์"><span id="frameTime">–</span></div>
       <dl>
         <dt>ฝนที่พิกัดตอนนี้</dt><dd id="rNow">–</dd>
         <dt>ฝนใกล้สุด</dt><dd id="rNear">–</dd>
@@ -185,7 +209,7 @@ footer a{color:inherit}
         <dt>เทียบกับพิกัด</dt><dd id="rAppr">–</dd>
         <dt>ภาพล่าสุด</dt><dd id="rAge">–</dd>
       </dl>
-      <p class="note">วงกลมคือรัศมี 10, 25 และ 50 กม. ลูกศรส้มคือทางที่กลุ่มฝนจะไปใน 1 ชั่วโมง</p>
+      <p class="note">ลูกศรส้มบนแผนที่โหมด "ฝนตอนนี้" คือทางที่กลุ่มฝนจะไปใน 1 ชั่วโมง</p>
       <div class="tablewrap"><table id="models"></table></div>
       <p class="note">ชั่วโมงแรกเชื่อเรดาร์เป็นหลัก แล้วค่อย ๆ ให้น้ำหนักแบบจำลองมากขึ้นจนเหลือแบบจำลองล้วนที่ 2 ชั่วโมง ฝนที่ก่อตัวใหม่เรดาร์ยังมองไม่เห็น ช่วงบ่ายตัวเลขจึงพึ่งแบบจำลองมากกว่า</p>
     </div>
@@ -322,6 +346,32 @@ const Core = (() => {
 })();
 if (typeof module !== 'undefined') module.exports = Core;
 
+/* ===== Past rain (pure) ===== */
+const Past = (() => {
+  function accumulate(masks, n) { const c = new Uint8Array(n); for (const m of masks) for (let k = 0; k < n; k++) c[k] += m[k]; return c; }
+  function pointHistory(frames, W, H, px, py) {
+    return frames.filter(f => f.mask).map(f => ({ time: f.time, wet: (Core.fracInDisk(f.mask, W, H, px, py, 1.5) || 0) >= 0.5 }));
+  }
+  // fraction of pixels with any rain, per 8 compass sectors, inside [r0,r1] px
+  function sectors(count, W, H, px, py, r0, r1) {
+    const n = new Array(8).fill(0), k = new Array(8).fill(0);
+    for (let y = Math.floor(py - r1); y <= Math.ceil(py + r1); y++) for (let x = Math.floor(px - r1); x <= Math.ceil(px + r1); x++) {
+      if (x < 0 || y < 0 || x >= W || y >= H) continue;
+      const d = Math.hypot(x - px, y - py); if (d < r0 || d > r1) continue;
+      const s = Math.round(Core.bearingDeg(x - px, y - py) / 45) % 8; n[s]++; if (count[y * W + x]) k[s]++;
+    }
+    return n.map((v, i) => (v ? k[i] / v : 0));
+  }
+  function anyFrac(count, W, H, px, py, r) {
+    let n = 0, k = 0;
+    for (let y = Math.floor(py - r); y <= Math.ceil(py + r); y++) for (let x = Math.floor(px - r); x <= Math.ceil(px + r); x++) {
+      if (x < 0 || y < 0 || x >= W || y >= H || Math.hypot(x - px, y - py) > r) continue; n++; if (count[y * W + x]) k++;
+    }
+    return n ? k / n : 0;
+  }
+  return { accumulate, pointHistory, sectors, anyFrac };
+})();
+if (typeof module !== 'undefined') module.exports.Past = Past;
 /* ===== App (browser) ===== */
 if (typeof window !== 'undefined') (() => {
   const qs = new URLSearchParams(location.search);
@@ -432,11 +482,14 @@ if (typeof window !== 'undefined') (() => {
     }
     return { canvas: c, mask };
   }
-  let basemap = null;
+  let basemap = null; const BZ = 9, BF = 4, BR = 640; // z9 basemap around the point, radius in z9 px
+  const P9 = { x: P.x * BF, y: P.y * BF };
+  const bx0 = Math.floor((P9.x - BR) / 256) * 256, by0 = Math.floor((P9.y - BR) / 256) * 256;
   async function loadBasemap() {
-    const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'); const jobs = [];
-    for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++)
-      jobs.push(loadImg(`https://tile.openstreetmap.org/${Core.Z}/${tileX0 + i}/${tileY0 + j}.png`, false)
+    const nx = Math.ceil((P9.x + BR - bx0) / 256), ny = Math.ceil((P9.y + BR - by0) / 256);
+    const c = document.createElement('canvas'); c.width = nx * 256; c.height = ny * 256; const g = c.getContext('2d'); const jobs = [];
+    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++)
+      jobs.push(loadImg(`https://tile.openstreetmap.org/${BZ}/${bx0 / 256 + i}/${by0 / 256 + j}.png`, false)
         .then(im => g.drawImage(im, i * 256, j * 256)).catch(() => {}));
     await Promise.all(jobs); basemap = c;
   }
@@ -542,20 +595,21 @@ if (typeof window !== 'undefined') (() => {
     $('updated').textContent = updatedText;
   }
   function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
-  let CROP = 180;
+  let CROP = 180, MODE = 'past', accCanvas = null, accCount = null;
   function drawRadar(idx) {
     const cv = $('radar'), g = cv.getContext('2d'), S = cv.width, k = S / 320;
     g.fillStyle = css('--surface2'); g.fillRect(0, 0, S, S);
     const sx = px - CROP / 2, sy = py - CROP / 2;
-    if (basemap) { g.globalAlpha = 0.55; g.drawImage(basemap, sx, sy, CROP, CROP, 0, 0, S, S); g.globalAlpha = 1; }
-    const f = state.frames[idx];
-    if (f) { g.globalAlpha = 0.9; g.drawImage(f.canvas, sx, sy, CROP, CROP, 0, 0, S, S); g.globalAlpha = 1; $('frameTime').textContent = fmtTime(f.time); }
+    if (basemap) { g.globalAlpha = 0.7; g.drawImage(basemap, P9.x - CROP * 2 - bx0, P9.y - CROP * 2 - by0, CROP * 4, CROP * 4, 0, 0, S, S); g.globalAlpha = 1; }
+    if (MODE === 'past') { if (accCanvas) g.drawImage(accCanvas, sx, sy, CROP, CROP, 0, 0, S, S); }
+    else { const f = state.frames[idx];
+      if (f) { g.globalAlpha = 0.85; g.drawImage(f.canvas, sx, sy, CROP, CROP, 0, 0, S, S); g.globalAlpha = 1; $('frameTime').textContent = fmtTime(f.time); } }
     const sc = S / CROP, c = S / 2;
     g.strokeStyle = css('--muted'); g.lineWidth = 1.2 * k; g.setLineDash([3 * k, 4 * k]);
     for (const km of [10, 25, 50]) { g.beginPath(); g.arc(c, c, km / KMPX * sc, 0, Math.PI * 2); g.stroke(); }
     g.setLineDash([]);
     const R = state.radar;
-    if (R && (R.vx || R.vy)) {
+    if (MODE === 'now' && R && (R.vx || R.vy)) {
       const ex = c + R.vx * 60 * sc, ey = c + R.vy * 60 * sc;
       g.strokeStyle = css('--tea'); g.fillStyle = css('--tea'); g.lineWidth = 3 * k;
       g.beginPath(); g.moveTo(c, c); g.lineTo(ex, ey); g.stroke();
@@ -584,6 +638,40 @@ if (typeof window !== 'undefined') (() => {
         : cos < -0.3 ? 'กำลังออกห่าง' : 'เคลื่อนผ่านด้านข้าง';
     } else $('rAppr').textContent = '–';
     $('rAge').textContent = `${fmtTime(R.last.time)} (${Math.round((Date.now() / 1000 - R.last.time) / 60)} นาทีก่อน)`;
+  }
+  function buildPast() {
+    const ok = state.frames.filter(f => f.mask);
+    accCanvas = null; accCount = null;
+    if (!ok.length) {
+      $('pAtFarm').textContent = state.frames.length ? 'อ่านพิกเซลเรดาร์ไม่ได้ จึงสรุปฝนย้อนหลังไม่ได้' : (DEMO ? 'ตัวอย่าง: ยังไม่มีภาพเรดาร์' : 'ยังไม่มีภาพเรดาร์');
+      $('pAround').textContent = ''; return;
+    }
+    accCount = Past.accumulate(ok.map(f => f.mask), W * H);
+    const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+    const img = g.createImageData(W, H), d = img.data;
+    const pal = [null, [120, 190, 255, 190], [120, 190, 255, 190], [40, 120, 230, 205], [40, 120, 230, 205], [40, 120, 230, 205], [110, 60, 200, 215]];
+    for (let k = 0; k < W * H; k++) { const n = accCount[k]; if (!n) continue; const p = pal[Math.min(6, n)];
+      d[k * 4] = p[0]; d[k * 4 + 1] = p[1]; d[k * 4 + 2] = p[2]; d[k * 4 + 3] = p[3]; }
+    g.putImageData(img, 0, 0); accCanvas = c;
+    const span = Math.round((ok[ok.length - 1].time - ok[0].time) / 60) + 10;
+    const hist = Past.pointHistory(ok, W, H, px, py), wet = hist.filter(h => h.wet);
+    if (wet.length) {
+      const a0 = wet[0].time, a1 = wet[wet.length - 1].time + 600;
+      $('pAtFarm').textContent = `ที่สวนมีฝนราว ${wet.length * 10} นาที ช่วง ${fmtTime(a0)}–${fmtTime(a1)}`;
+    } else $('pAtFarm').textContent = `ที่สวนไม่มีฝนใน ${span >= 110 ? '2 ชั่วโมง' : span + ' นาที'}ที่ผ่านมา`;
+    const r10 = 10 / KMPX, r25 = 25 / KMPX;
+    const near = Past.anyFrac(accCount, W, H, px, py, r10), mid = Past.sectors(accCount, W, H, px, py, r10, r25);
+    const parts = [];
+    parts.push(near > 0.02 ? `ในรัศมี 10 กม. มีฝนตกไปแล้วราว ${Math.round(near * 100)}% ของพื้นที่` : 'ในรัศมี 10 กม. ยังไม่มีฝน');
+    const dirs = mid.map((f, i) => ({ f, i })).filter(o => o.f >= 0.1).sort((x, y) => y.f - x.f).map(o => Core.dirName(o.i * 45));
+    parts.push(dirs.length ? `ระยะ 10–25 กม. มีฝนทาง${dirs.slice(0, 3).join(', ')}` : 'ระยะ 10–25 กม. แทบไม่มีฝน');
+    $('pAround').textContent = parts.join(' · ');
+  }
+  function setMode(m) {
+    MODE = m;
+    document.querySelectorAll('#modeSeg button').forEach(x => x.setAttribute('aria-pressed', x.dataset.mode === m ? 'true' : 'false'));
+    $('scrubRow').hidden = m !== 'now'; $('pastKey').hidden = m !== 'past'; $('pastSum').hidden = m !== 'past';
+    drawRadar(+$('frame').value);
   }
   function renderModels(models) {
     const tb = $('models'); tb.replaceChildren();
@@ -628,18 +716,18 @@ if (typeof window !== 'undefined') (() => {
       DEMO ? 'ข้อมูลตัวอย่าง' : 'อัปเดต ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' · รีเฟรชเองทุก 10 นาที');
     renderHours(slots); renderStrip(slots);
     const fr = $('frame'); fr.max = Math.max(0, state.frames.length - 1); fr.value = fr.max;
-    drawRadar(+fr.value); renderRadarStats(state.radar); renderModels(state.models);
+    buildPast(); drawRadar(+fr.value); renderRadarStats(state.radar); renderModels(state.models);
     $('warn').hidden = !problems.length; $('warn').textContent = problems.join(' · ');
     state.busy = false; $('refresh').disabled = false;
   }
-  document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#zoomSeg button').forEach(b => b.addEventListener('click', () => {
     CROP = +b.dataset.crop;
-    document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+    document.querySelectorAll('#zoomSeg button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
     drawRadar(+$('frame').value);
   }));
+  document.querySelectorAll('#modeSeg button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
   $('frame').addEventListener('input', e => drawRadar(+e.target.value));
   $('refresh').addEventListener('click', refresh);
-  $('details').addEventListener('toggle', () => drawRadar(+$('frame').value));
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => drawRadar(+$('frame').value));
   refresh();
   if (!DEMO) setInterval(refresh, 10 * 60 * 1000);
