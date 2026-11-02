@@ -192,17 +192,17 @@ footer a{color:inherit}
   <div class="card hero" aria-live="polite">
     <div id="dog" class="bob"></div>
     <span class="mood idle" id="mood">กำลังดมกลิ่นฝน…</span>
-    <p class="answer" id="verdict">กำลังดึงข้อมูล</p>
+    <p class="answer" id="verdict"></p>
     <div class="sub" id="verdictSub"></div>
     <div class="quarters" id="quarters" hidden></div>
-    <button class="backall" id="backAll" type="button" hidden>ดูภาพรวม 4 ชั่วโมง</button>
+    <button class="backall" id="backAll" type="button" hidden>กลับภาพรวม</button>
     <div class="updated" id="updated"></div>
   </div>
   <div class="warn" id="warn" hidden></div>
   <div class="toast" id="toast" role="status" hidden></div>
 
   <div class="hours" id="hours"></div>
-  <p class="tip" id="tip">แตะแต่ละช่วงเวลาเพื่อดูชาเย็นในชั่วโมงนั้น</p>
+  <p class="tip" id="tip">แตะดูชาเย็นแต่ละชั่วโมง</p>
 
   <div class="card">
     <h2>ทุก 15 นาที</h2>
@@ -212,7 +212,7 @@ footer a{color:inherit}
   </div>
 
   <div class="card mapcard">
-    <h2>แผนที่ฝนรอบสวน</h2>
+    <h2>ชาเย็นส่องฝนรอบสวน</h2>
     <div class="seg two" role="group" aria-label="เลือกชั้นข้อมูล" id="modeSeg">
       <button type="button" data-mode="past" aria-pressed="true">ตกไปแล้ว 2 ชม.</button>
       <button type="button" data-mode="now">ฝนตอนนี้</button>
@@ -231,11 +231,10 @@ footer a{color:inherit}
       <div class="big" id="pAtFarm">–</div>
       <div id="pAround" class="sub"></div>
     </div>
-    <p class="note">วงกลมคือรัศมี 10, 25 และ 50 กม. จุดส้มคือสวน สีบนแผนที่บอกว่าแต่ละจุดมีฝนรวมกี่นาทีใน 2 ชั่วโมงที่ผ่านมา (จากภาพเรดาร์ทุก 10 นาที)</p>
   </div>
 
   <details class="card" id="details">
-    <summary>รายละเอียดเรดาร์และแบบจำลอง <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <summary>รายละเอียด <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></summary>
     <div class="detail-body">
       <dl>
         <dt>ฝนที่พิกัดตอนนี้</dt><dd id="rNow">–</dd>
@@ -244,9 +243,7 @@ footer a{color:inherit}
         <dt>เทียบกับพิกัด</dt><dd id="rAppr">–</dd>
         <dt>ภาพล่าสุด</dt><dd id="rAge">–</dd>
       </dl>
-      <p class="note">ลูกศรส้มบนแผนที่โหมด "ฝนตอนนี้" คือทางที่กลุ่มฝนจะไปใน 1 ชั่วโมง</p>
       <div class="tablewrap"><table id="models"></table></div>
-      <p class="note">ชั่วโมงแรกเชื่อเรดาร์เป็นหลัก แล้วค่อย ๆ ให้น้ำหนักแบบจำลองมากขึ้นจนเหลือแบบจำลองล้วนที่ 2 ชั่วโมง ฝนที่ก่อตัวใหม่เรดาร์ยังมองไม่เห็น ช่วงบ่ายตัวเลขจึงพึ่งแบบจำลองมากกว่า</p>
     </div>
   </details>
 
@@ -367,12 +364,12 @@ const Core = (() => {
   function verdict(slots, rainingNow) {
     const valid = slots.filter(s => s.p != null);
     if (!valid.length) return { cls: '', text: 'ยังไม่มีข้อมูล', sub: '' };
-    if (rainingNow) return { cls: 'wet', text: 'ฝนกำลังตกที่พิกัดนี้', sub: 'เรดาร์ล่าสุดเห็นฝนอยู่บนพิกัดนี้' };
+    if (rainingNow) return { cls: 'wet', text: 'ฝนตกที่สวนแล้ว', sub: '' };
     const first = valid.find(s => s.p >= 0.5);
     const max = valid.reduce((a, b) => (b.p > a.p ? b : a));
-    if (first) return { cls: 'wet', text: first.t <= 15 ? 'ฝนน่าจะมาในไม่ถึง 15 นาที' : `ฝนน่าจะมาในอีกราว ${fmtLead(first.t)}`, sub: `โอกาสสูงสุด ${Math.round(max.p * 100)}% ช่วง ${max.label}`, first };
-    if (max.p >= 0.25) return { cls: 'maybe', text: 'มีโอกาสฝนบ้าง', sub: `สูงสุด ${Math.round(max.p * 100)}% ช่วง ${max.label}` };
-    return { cls: 'dry', text: '4 ชั่วโมงนี้น่าจะไม่มีฝน', sub: `โอกาสสูงสุด ${Math.round(max.p * 100)}% ช่วง ${max.label}` };
+    if (first) return { cls: 'wet', text: first.t <= 15 ? 'ฝนจะมาในไม่ถึง 15 นาที' : `ฝนจะมาในอีกราว ${fmtLead(first.t)}`, sub: `โอกาสสูงสุด ${Math.round(max.p * 100)}% ช่วง ${max.label}`, first };
+    if (max.p >= 0.25) return { cls: 'maybe', text: 'ได้กลิ่นฝนจาง ๆ', sub: `โอกาสสูงสุด ${Math.round(max.p * 100)}% ช่วง ${max.label}` };
+    return { cls: 'dry', text: '4 ชั่วโมงนี้ไม่มีกลิ่นฝน', sub: `โอกาสสูงสุด ${Math.round(max.p * 100)}% ช่วง ${max.label}` };
   }
   function fmtLead(t) { if (t < 60) return `${t} นาที`; const h = Math.floor(t / 60), m = t % 60; return m ? `${h} ชม. ${m} นาที` : `${h} ชั่วโมง`; }
 
@@ -666,7 +663,7 @@ if (typeof window !== 'undefined') (() => {
       box.appendChild(d);
     }
   }
-  const HOUR_TEXT = { dry: 'ช่วงนี้น่าจะไม่มีฝน', maybe: 'ช่วงนี้มีโอกาสฝน', wet: 'ช่วงนี้ฝนน่าจะตก' };
+  const HOUR_TEXT = { dry: 'ชั่วโมงนี้แห้ง', maybe: 'ชั่วโมงนี้มีลุ้น', wet: 'ชั่วโมงนี้ฝนมา' };
   function markChips() { document.querySelectorAll('#hours .hour').forEach((b, i) => b.setAttribute('aria-pressed', state.sel === i ? 'true' : 'false')); }
   function showHour(h) {
     const H = state.hours[h]; if (!H) return;
@@ -745,7 +742,7 @@ if (typeof window !== 'undefined') (() => {
     if (R.near && spd >= 1) {
       const tx = -R.near.dx, ty = -R.near.dy, cos = (tx * R.vx + ty * R.vy) / (Math.hypot(tx, ty) * Math.hypot(R.vx, R.vy) || 1);
       const km = R.near.d * KMPX;
-      $('rAppr').textContent = cos > 0.5 ? `กำลังเข้าหา ถึงราว ${Core.fmtLead(Math.max(5, Math.round(km / spd * 12) * 5))} ถ้าความเร็วคงที่`
+      $('rAppr').textContent = cos > 0.5 ? `กำลังเข้าหา ถึงราว ${Core.fmtLead(Math.max(5, Math.round(km / spd * 12) * 5))}`
         : cos < -0.3 ? 'กำลังออกห่าง' : 'เคลื่อนผ่านด้านข้าง';
     } else $('rAppr').textContent = '–';
     $('rAge').textContent = `${fmtTime(R.last.time)} (${Math.round((Date.now() / 1000 - R.last.time) / 60)} นาทีก่อน)`;
@@ -754,7 +751,7 @@ if (typeof window !== 'undefined') (() => {
     const ok = state.frames.filter(f => f.mask);
     accCanvas = null; accCount = null;
     if (!ok.length) {
-      $('pAtFarm').textContent = state.frames.length ? 'อ่านพิกเซลเรดาร์ไม่ได้ จึงสรุปฝนย้อนหลังไม่ได้' : (DEMO ? 'ตัวอย่าง: ยังไม่มีภาพเรดาร์' : 'ยังไม่มีภาพเรดาร์');
+      $('pAtFarm').textContent = state.frames.length ? 'อ่านภาพเรดาร์ไม่ได้' : (DEMO ? 'ตัวอย่าง: ยังไม่มีภาพเรดาร์' : 'ยังไม่มีภาพเรดาร์');
       $('pAround').textContent = ''; return;
     }
     accCount = Past.accumulate(ok.map(f => f.mask), W * H);
@@ -768,14 +765,14 @@ if (typeof window !== 'undefined') (() => {
     const hist = Past.pointHistory(ok, W, H, px, py), wet = hist.filter(h => h.wet);
     if (wet.length) {
       const a0 = wet[0].time, a1 = wet[wet.length - 1].time + 600;
-      $('pAtFarm').textContent = `ที่สวนมีฝนราว ${wet.length * 10} นาที ช่วง ${fmtTime(a0)}–${fmtTime(a1)}`;
-    } else $('pAtFarm').textContent = `ที่สวนไม่มีฝนใน ${span >= 110 ? '2 ชั่วโมง' : span + ' นาที'}ที่ผ่านมา`;
+      $('pAtFarm').textContent = `ชาเย็นโดนฝนที่สวน ${wet.length * 10} นาที (${fmtTime(a0)}–${fmtTime(a1)})`;
+    } else $('pAtFarm').textContent = `ที่สวนแห้งมา ${span >= 110 ? '2 ชั่วโมง' : span + ' นาที'}`;
     const r10 = 10 / KMPX, r25 = 25 / KMPX;
     const near = Past.anyFrac(accCount, W, H, px, py, r10), mid = Past.sectors(accCount, W, H, px, py, r10, r25);
     const parts = [];
-    parts.push(near > 0.02 ? `ในรัศมี 10 กม. มีฝนตกไปแล้วราว ${Math.round(near * 100)}% ของพื้นที่` : 'ในรัศมี 10 กม. ยังไม่มีฝน');
+    parts.push(near > 0.02 ? `รัศมี 10 กม. เปียกไปแล้ว ${Math.round(near * 100)}%` : 'รัศมี 10 กม. ยังแห้ง');
     const dirs = mid.map((f, i) => ({ f, i })).filter(o => o.f >= 0.1).sort((x, y) => y.f - x.f).map(o => Core.dirName(o.i * 45));
-    parts.push(dirs.length ? `ระยะ 10–25 กม. มีฝนทาง${dirs.slice(0, 3).join(', ')}` : 'ระยะ 10–25 กม. แทบไม่มีฝน');
+    parts.push(dirs.length ? `10–25 กม. มีฝนทาง${dirs.slice(0, 3).join(', ')}` : '10–25 กม. แห้ง');
     $('pAround').textContent = parts.join(' · ');
   }
   function setMode(m) {
@@ -817,14 +814,14 @@ if (typeof window !== 'undefined') (() => {
       if (!basemap) loadBasemap().then(() => drawRadar(+$('frame').value));
       state.frames = rad.status === 'fulfilled' ? rad.value : [];
       state.models = mod.status === 'fulfilled' ? mod.value : null;
-      if (rad.status !== 'fulfilled') problems.push('ดึงเรดาร์ไม่ได้ ตัวเลขทั้งหมดมาจากแบบจำลอง');
-      else if (state.frames.length && !state.frames.some(f => f.mask)) problems.push('อ่านพิกเซลเรดาร์ไม่ได้ ตัวเลขมาจากแบบจำลองอย่างเดียว');
-      if (!state.models || (!state.models.ens.length && !state.models.det.length)) problems.push('ดึงข้อมูลแบบจำลองไม่ได้');
+      if (rad.status !== 'fulfilled') problems.push('ดึงเรดาร์ไม่ได้ ใช้แบบจำลองอย่างเดียว');
+      else if (state.frames.length && !state.frames.some(f => f.mask)) problems.push('อ่านภาพเรดาร์ไม่ได้ ใช้แบบจำลองอย่างเดียว');
+      if (!state.models || (!state.models.ens.length && !state.models.det.length)) problems.push('ดึงแบบจำลองไม่ได้');
       state.radar = analyseRadar(state.frames, state.models);
     }
     const slots = buildSlots(state.models, state.radar);
     renderVerdict(slots, !!(state.radar && state.radar.rainingNow),
-      DEMO ? 'ข้อมูลตัวอย่าง' : 'อัปเดต ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' · รีเฟรชเองทุก 10 นาที');
+      DEMO ? 'ข้อมูลตัวอย่าง' : 'ดมกลิ่นล่าสุด ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }));
     renderHours(slots); renderStrip(slots);
     if (state.sel != null) showHour(state.sel); else showOverview();
     const fr = $('frame'); fr.max = Math.max(0, state.frames.length - 1); fr.value = fr.max;
@@ -897,7 +894,7 @@ if (typeof window !== 'undefined') (() => {
     const pastTxt = $('pAtFarm').textContent; let py2 = cy + 205;
     if (pastTxt && pastTxt !== '–') for (const ln of wrapLines(g, pastTxt, 860).slice(0, 2)) { g.fillText(ln, W2 / 2, py2); py2 += 38; }
     g.font = `400 22px ${F}`; g.fillStyle = 'rgba(29,39,51,.55)';
-    g.fillText('โอกาสฝนสูงสุดรายชั่วโมง · เรดาร์ RainViewer · แบบจำลอง Open-Meteo', W2 / 2, H2 - 40);
+    g.fillText('ข้อมูล RainViewer · Open-Meteo', W2 / 2, H2 - 40);
     return c;
   }
   function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), 2600); }
