@@ -13,7 +13,7 @@
   --mono:"IBM Plex Mono",ui-monospace,monospace;
   --tea:#e07b39; --rain:#3b82c4; --dry:#4f9a5a; --maybe:#e0a020;
   --acc1:rgba(120,190,255,.75); --acc2:rgba(40,120,230,.8); --acc3:rgba(110,60,200,.85);
-  --dog:#e9a066; --ear:#b9693a; --muzzle:#fff1e0; --ink:#2b2b3a; --blush:#ff8fa0; --coat:#ffd23f;
+  --dog:#e9a066; --ear:#b9693a; --muzzle:#fff1e0; --ink:#2b2b3a; --blush:#ff8fa0; --coat:#ffd23f; --dogwet:#d98a52;
   color-scheme:light;
 }
 /* ---------- sticker ---------- */
@@ -61,12 +61,14 @@ body{margin:0;font:16px/1.55 var(--body)}
 .top h1{font:600 1.15rem/1.2 var(--display);margin:0}
 .top h1 span{color:var(--tea)}
 .place{font-size:.8rem;color:var(--muted)}
+.topbtns{display:flex;gap:8px}
+.iconbtn[disabled]{opacity:.5}
 .iconbtn{width:44px;height:44px;flex:none;border-radius:50%;border:var(--bw) solid var(--outline);background:var(--surface);
   color:var(--fg);display:grid;place-items:center;cursor:pointer;box-shadow:var(--shadow)}
 :root[data-style="clean"] .iconbtn{box-shadow:none;background:var(--surface)}
 .iconbtn:active{transform:translate(2px,2px)}
 .iconbtn:focus-visible,summary:focus-visible{outline:3px solid var(--tea);outline-offset:3px}
-.iconbtn[disabled] svg{animation:spin 1s linear infinite}
+#refresh[disabled] svg{animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 .card{background:var(--surface);border:var(--bw) solid var(--outline);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
@@ -83,6 +85,12 @@ body{margin:0;font:16px/1.55 var(--body)}
 .sub{color:var(--muted);font-size:.92rem}
 .updated{font:400 .75rem var(--mono);color:var(--muted);margin-top:4px}
 
+.savebtn{margin-top:10px;display:inline-flex;align-items:center;gap:8px;font:600 .95rem var(--display);color:#fff;background:var(--tea);
+  border:0;border-radius:999px;padding:10px 20px;cursor:pointer;min-height:44px}
+.savebtn[disabled]{opacity:.5;cursor:wait}
+.savebtn:focus-visible{outline:3px solid var(--fg);outline-offset:3px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);
+  padding:10px 18px;border-radius:999px;font-size:.9rem;z-index:20;box-shadow:0 6px 20px rgba(0,0,0,.2)}
 .hours{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .hour{background:var(--surface);border:var(--bw) solid var(--outline);border-radius:16px;box-shadow:var(--shadow);
   padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:2px}
@@ -153,9 +161,14 @@ footer a{color:inherit}
       <h1>ฝนจะตกไหม<span>ชาเย็น</span></h1>
       <div class="place" id="coords">อ.คีรีรัฐนิคม จ.สุราษฎร์ธานี</div>
     </div>
+    <div class="topbtns">
+    <button class="iconbtn" id="save" type="button" aria-label="เซฟรูปชาเย็น" title="เซฟรูปชาเย็น" disabled>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+    </button>
     <button class="iconbtn" id="refresh" type="button" aria-label="อัปเดตตอนนี้">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 6.3"/><path d="M20 4v7h-7"/></svg>
     </button>
+    </div>
   </div>
 
   <div class="card hero" aria-live="polite">
@@ -166,6 +179,7 @@ footer a{color:inherit}
     <div class="updated" id="updated"></div>
   </div>
   <div class="warn" id="warn" hidden></div>
+  <div class="toast" id="toast" role="status" hidden></div>
 
   <div class="hours" id="hours"></div>
 
@@ -403,29 +417,31 @@ if (typeof window !== 'undefined') (() => {
       back = `<path ${o} ${S('var(--surface)')} d="M2 84 a11 11 0 0 1 3-21 a15 15 0 0 1 28-5 a12 12 0 0 1 8 26 Z"/>` +
         `<text x="174" y="88" font-size="38" font-weight="700" font-family="Mitr,sans-serif" ${S('var(--tea)')}>?</text>`;
     } else if (wet) {
-      eyes = `<circle cx="80" cy="99" r="7.5" ${S('var(--ink)')}/><circle cx="120" cy="99" r="7.5" ${S('var(--ink)')}/>` +
-        `<circle cx="82.5" cy="96" r="2.6" ${S('#fff')}/><circle cx="122.5" cy="96" r="2.6" ${S('#fff')}/>` +
-        `<path class="ink" style="stroke-width:3.2" d="M69 87 Q78 84 88 80"/><path class="ink" style="stroke-width:3.2" d="M131 87 Q122 84 112 80"/>`;
-      mouth = `<path class="ink" d="M90 140 Q95 135 100 140 Q105 145 110 140"/>`;
-      extra = `<g class="drops">` + [[10, 44], [190, 40], [100, -4]].map(([x, y]) =>
-        `<path ${S('var(--rain)')} d="M${x} ${y} q-6 10 0 14 q6 -4 0 -14 Z"/>`).join('') + `</g>`;
-    } else {
+      eyes = `<circle cx="80" cy="97" r="8.5" ${S('var(--ink)')}/><circle cx="120" cy="97" r="8.5" ${S('var(--ink)')}/>` +
+        `<circle cx="83" cy="93.5" r="3.2" ${S('#fff')}/><circle cx="123" cy="93.5" r="3.2" ${S('#fff')}/>` +
+        `<circle cx="77.5" cy="100.5" r="1.5" ${S('#fff')}/><circle cx="117.5" cy="100.5" r="1.5" ${S('#fff')}/>`;
+      mouth = `<path ${S('#7a2e35')} d="M85 133 Q100 158 115 133 Q100 139 85 133 Z"/><path ${S('#ff7a8a')} d="M92 143 Q100 156 108 143 Q100 139 92 143 Z"/>`;
+      const drop = (x, y, s = 1, f = 'var(--rain)') => `<path ${S(f)} d="M${x} ${y} q${-6 * s} ${10 * s} 0 ${14 * s} q${6 * s} ${-4 * s} 0 ${-14 * s} Z"/>`;
+      extra = `<path ${o} ${S('var(--dogwet)')} d="M84 60 L90 41 L97 56 L104 39 L110 56 L117 44 L118 62 Z"/>` +
+        `<path d="M70 76 Q79 68 90 70" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round" opacity=".75"/>` +
+        `<path d="M118 66 Q126 66 132 72" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" opacity=".6"/>` +
+        drop(42, 32, .8) + drop(158, 32, .8) + drop(40, 112, .9) + drop(162, 116, .9) + drop(100, 158, .8) +
+        `<g class="drops">` + drop(4, 40) + drop(196, 50) + drop(100, -10) + `</g>`;
+        } else {
       eyes = `<circle cx="80" cy="98" r="7.5" ${S('var(--ink)')}/><circle cx="120" cy="98" r="7.5" ${S('var(--ink)')}/>` +
         `<circle cx="82.5" cy="95" r="2.6" ${S('#fff')}/><circle cx="122.5" cy="95" r="2.6" ${S('#fff')}/>`;
       mouth = `<path class="ink" d="M91 135 Q95.5 140 100 135 Q104.5 140 109 135"/>`;
     }
-    const hood = wet ? `<path ${o} ${S('var(--coat)')} d="M36 108 C32 38 168 38 164 108 C152 72 48 72 36 108 Z"/>` : '';
+    const fur = wet ? 'var(--dogwet)' : 'var(--dog)';
     return `<svg class="dog" viewBox="-10 -12 220 222" role="img" aria-label="น้องหมาชาเย็น">
       ${back}
-      <ellipse ${o} cx="100" cy="190" rx="50" ry="26" ${S(wet ? 'var(--coat)' : 'var(--dog)')}/>
-      ${wet ? '' : `<path d="M66 162 Q100 180 134 162" stroke="var(--tea)" stroke-width="9" fill="none" stroke-linecap="round"/><circle ${o} cx="100" cy="176" r="7" ${S('#ffc93c')}/>`}
+      <ellipse ${o} cx="100" cy="190" rx="50" ry="26" ${S(fur)}/>
       <path ${o} ${S('var(--ear)')} d="M54 84 C44 60 38 30 46 20 C54 16 74 32 94 56 Z"/>
       <path ${S('var(--blush)')} opacity=".5" d="M59 72 C54 54 51 38 55 31 C62 33 74 44 84 56 Z"/>
       <path ${o} ${S('var(--ear)')} d="M146 84 C156 60 162 30 154 20 C146 16 126 32 106 56 Z"/>
       <path ${S('var(--blush)')} opacity=".5" d="M141 72 C146 54 149 38 145 31 C138 33 126 44 116 56 Z"/>
-      <ellipse ${o} cx="100" cy="106" rx="60" ry="54" ${S('var(--dog)')}/>
+      <ellipse ${o} cx="100" cy="106" rx="60" ry="54" ${S(fur)}/>
       <ellipse cx="125" cy="92" rx="17" ry="14" ${S('var(--ear)')} opacity=".45"/>
-      ${hood}
       <ellipse ${o} cx="100" cy="129" rx="28" ry="21" ${S('var(--muzzle)')}/>
       ${eyes}
       <path ${S('var(--ink)')} d="M90 117 Q100 111 110 117 Q107 126 100 127 Q93 126 90 117 Z"/>
@@ -440,7 +456,7 @@ if (typeof window !== 'undefined') (() => {
     if (kind === 'maybe') return `<svg class="ic" viewBox="0 0 32 32"><circle cx="20" cy="11" r="6" style="fill:#ffc93c"/><path d="M7 25a6 6 0 0 1 1-12 8 8 0 0 1 14 2 5 5 0 0 1 0 10Z" style="fill:var(--lo)"/></svg>`;
     return `<svg class="ic" viewBox="0 0 32 32"><circle cx="16" cy="16" r="7" style="fill:#ffc93c"/>${[0,60,120,180,240,300].map(a => { const r = a * Math.PI / 180; return `<line x1="${16 + Math.cos(r) * 10}" y1="${16 + Math.sin(r) * 10}" x2="${16 + Math.cos(r) * 13.5}" y2="${16 + Math.sin(r) * 13.5}" stroke="#ffb000" stroke-width="2.4" stroke-linecap="round"/>`; }).join('')}</svg>`;
   }
-  const MOOD_TAG = { dry: 'ฟ้าเปิด ออกไปได้', maybe: 'ลุ้นหน่อย พกร่มไว้', wet: 'ฝนมา หลบก่อนนะ', idle: 'กำลังดมกลิ่นฝน…' };
+  const MOOD_TAG = { dry: 'ฟ้าเปิด ออกไปได้', maybe: 'ลุ้นหน่อย พกร่มไว้', wet: 'ฝนมาแล้ว เย้!', idle: 'กำลังดมกลิ่นฝน…' };
   function setMood(m, now) {
     $('dog').innerHTML = dogSVG(m);
     $('mood').className = 'mood ' + m;
@@ -573,6 +589,7 @@ if (typeof window !== 'undefined') (() => {
       d.className = 'hour ' + lv;
       d.innerHTML = `<span class="t">${slots[h * 4].label}</span>${iconSVG(lv)}<span class="p">${p == null ? '–' : Math.round(p * 100) + '%'}</span>`;
       d.title = `โอกาสฝนสูงสุดในชั่วโมงที่เริ่ม ${slots[h * 4].label}`;
+      (state.hours = h ? state.hours : [])[h] = { label: slots[h * 4].label, p, lv };
       box.appendChild(d);
     }
   }
@@ -593,6 +610,7 @@ if (typeof window !== 'undefined') (() => {
     $('verdict').textContent = v.text; $('verdictSub').textContent = v.sub;
     setMood(v.cls || 'idle', rainingNow);
     $('updated').textContent = updatedText;
+    state.snap = { mood: v.cls || 'idle', rainingNow, text: v.text, sub: v.sub, tag: $('mood').textContent };
   }
   function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
   let CROP = 180, MODE = 'past', accCanvas = null, accCount = null;
@@ -718,7 +736,96 @@ if (typeof window !== 'undefined') (() => {
     const fr = $('frame'); fr.max = Math.max(0, state.frames.length - 1); fr.value = fr.max;
     buildPast(); drawRadar(+fr.value); renderRadarStats(state.radar); renderModels(state.models);
     $('warn').hidden = !problems.length; $('warn').textContent = problems.join(' · ');
-    state.busy = false; $('refresh').disabled = false;
+    state.busy = false; $('refresh').disabled = false; $('save').disabled = false;
+  }
+
+  /* ---------- save image ---------- */
+  const CARD_COLORS = { dog: '#e9a066', ear: '#b9693a', muzzle: '#fff1e0', ink: '#2b2b3a', blush: '#ff8fa0', coat: '#ffd23f', dogwet: '#d98a52',
+    tea: '#e07b39', rain: '#3b82c4', surface: '#ffffff', lo: '#e2e8f0', outline: 'transparent' };
+  const CARD_BG = { dry: ['#ffe9a8', '#fff7e0'], maybe: ['#ffd9bd', '#fff1e4'], wet: ['#bfe0ff', '#eaf5ff'], idle: ['#dfe6ee', '#f4f7fa'] };
+  const LV_COLOR = { dry: '#4f9a5a', maybe: '#e07b39', wet: '#3b82c4' };
+  function svgImage(svg, size) {
+    let s = svg.replace(/var\(--([a-z0-9]+)\)/g, (m, k) => CARD_COLORS[k] || '#000')
+      .replace(/class="dog"/, `width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg"`)
+      .replace('>', '><style>.o{stroke:none}.ink{stroke:#2b2b3a;stroke-width:4;fill:none;stroke-linecap:round}text{font-family:sans-serif}</style>');
+    if (!/xmlns=/.test(s)) s = s.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+    return loadImg('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s), false);
+  }
+  function rr(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+  function wrapLines(g, text, maxW) {
+    const seg = typeof Intl !== 'undefined' && Intl.Segmenter ? [...new Intl.Segmenter('th', { granularity: 'word' }).segment(text)].map(x => x.segment) : [...text];
+    const lines = []; let cur = '';
+    for (const w of seg) { if (g.measureText(cur + w).width > maxW && cur) { lines.push(cur.trim()); cur = w; } else cur += w; }
+    if (cur.trim()) lines.push(cur.trim()); return lines;
+  }
+  async function makeCard() {
+    await (document.fonts ? document.fonts.ready : Promise.resolve());
+    const S = state.snap, W2 = 1080, H2 = 1350, c = document.createElement('canvas'); c.width = W2; c.height = H2;
+    const g = c.getContext('2d'), F = 'Anuphan, "IBM Plex Sans Thai", sans-serif', M = '"IBM Plex Mono", monospace';
+    const bg = CARD_BG[S.mood] || CARD_BG.idle, grd = g.createLinearGradient(0, 0, 0, H2);
+    grd.addColorStop(0, bg[0]); grd.addColorStop(1, bg[1]); g.fillStyle = grd; g.fillRect(0, 0, W2, H2);
+    // confetti of drops / dots around the panel edge
+    g.globalAlpha = .35;
+    for (let i = 0; i < 26; i++) { const x = (i * 397) % W2, y = (i * 211) % H2;
+      g.fillStyle = S.mood === 'wet' ? '#3b82c4' : S.mood === 'dry' ? '#ffb000' : '#e07b39';
+      g.beginPath(); if (S.mood === 'wet') { g.moveTo(x, y); g.quadraticCurveTo(x - 9, y + 16, x, y + 20); g.quadraticCurveTo(x + 9, y + 16, x, y); } else g.arc(x, y, 6, 0, 7); g.fill(); }
+    g.globalAlpha = 1;
+    g.fillStyle = '#fff'; g.shadowColor = 'rgba(30,50,80,.12)'; g.shadowBlur = 40; g.shadowOffsetY = 12;
+    rr(g, 50, 50, W2 - 100, H2 - 140, 56); g.fill(); g.shadowColor = 'transparent';
+    // header
+    g.textBaseline = 'alphabetic'; g.textAlign = 'left'; g.font = `700 44px ${F}`; g.fillStyle = '#1d2733';
+    g.fillText('ฝนจะตกไหม', 100, 130); const tw = g.measureText('ฝนจะตกไหม').width; g.fillStyle = '#e07b39'; g.fillText('ชาเย็น', 100 + tw, 130);
+    g.font = `400 28px ${F}`; g.fillStyle = '#66727f'; g.fillText($('coords').textContent, 100, 172);
+    const now = new Date();
+    g.textAlign = 'right'; g.font = `500 28px ${M}`; g.fillStyle = '#1d2733';
+    g.fillText(now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }), W2 - 100, 130);
+    g.font = `400 26px ${F}`; g.fillStyle = '#66727f'; g.fillText(now.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }), W2 - 100, 172);
+    // dog
+    const dog = await svgImage(dogSVG(S.mood), 490); g.drawImage(dog, (W2 - 490) / 2, 185, 490, 490);
+    // mood pill
+    let y = 748; g.textAlign = 'center'; g.font = `600 32px ${F}`;
+    const pw = g.measureText(S.tag).width + 64; g.fillStyle = LV_COLOR[S.mood] || '#66727f'; rr(g, (W2 - pw) / 2, y - 42, pw, 60, 30); g.fill();
+    g.fillStyle = S.mood === 'maybe' ? '#fff' : '#fff'; g.fillText(S.tag, W2 / 2, y);
+    // verdict
+    g.font = `700 60px ${F}`; g.fillStyle = '#1d2733'; y += 92;
+    for (const ln of wrapLines(g, S.text, 860).slice(0, 2)) { g.fillText(ln, W2 / 2, y); y += 72; }
+    g.font = `400 32px ${F}`; g.fillStyle = '#66727f'; if (S.sub) { g.fillText(S.sub, W2 / 2, y - 14); y += 40; }
+    // hour chips
+    const cw = 200, gap = 20, x0 = (W2 - (4 * cw + 3 * gap)) / 2, cy = Math.max(y, 985);
+    (state.hours || []).forEach((hh, i) => {
+      const x = x0 + i * (cw + gap); g.fillStyle = '#f3f6fa'; rr(g, x, cy, cw, 150, 30); g.fill();
+      g.font = `500 28px ${M}`; g.fillStyle = '#66727f'; g.fillText(hh.label, x + cw / 2, cy + 48);
+      g.font = `700 50px ${F}`; g.fillStyle = hh.p == null ? '#66727f' : (hh.lv === 'dry' ? '#1d2733' : LV_COLOR[hh.lv]);
+      g.fillText(hh.p == null ? '–' : Math.round(hh.p * 100) + '%', x + cw / 2, cy + 118);
+    });
+    // past rain line
+    g.font = `500 28px ${F}`; g.fillStyle = '#1d2733';
+    const pastTxt = $('pAtFarm').textContent; let py2 = cy + 205;
+    if (pastTxt && pastTxt !== '–') for (const ln of wrapLines(g, pastTxt, 860).slice(0, 2)) { g.fillText(ln, W2 / 2, py2); py2 += 38; }
+    g.font = `400 22px ${F}`; g.fillStyle = 'rgba(29,39,51,.55)';
+    g.fillText('โอกาสฝนสูงสุดรายชั่วโมง · เรดาร์ RainViewer · แบบจำลอง Open-Meteo', W2 / 2, H2 - 40);
+    return c;
+  }
+  function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), 2600); }
+  async function saveCard() {
+    if (!state.snap) return;
+    const btn = $('save'); btn.disabled = true;
+    try {
+      const c = await makeCard();
+      const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+      const d = new Date(), pad = n => String(n).padStart(2, '0');
+      const name = `chayen-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.png`;
+      const file = new File([blob], name, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] }) && matchMedia('(pointer:coarse)').matches) {
+        try { await navigator.share({ files: [file], title: 'ฝนจะตกไหมชาเย็น' }); toast('ส่งรูปแล้ว'); return; }
+        catch (e) { if (e && e.name === 'AbortError') return; }
+      }
+      const url = URL.createObjectURL(blob), a2 = document.createElement('a');
+      a2.href = url; a2.download = name; document.body.appendChild(a2); a2.click(); a2.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      toast('เซฟรูปแล้ว');
+    } catch (e) { toast('เซฟรูปไม่สำเร็จ ลองกดอีกครั้ง'); }
+    finally { btn.disabled = false; }
   }
   document.querySelectorAll('#zoomSeg button').forEach(b => b.addEventListener('click', () => {
     CROP = +b.dataset.crop;
@@ -728,6 +835,8 @@ if (typeof window !== 'undefined') (() => {
   document.querySelectorAll('#modeSeg button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
   $('frame').addEventListener('input', e => drawRadar(+e.target.value));
   $('refresh').addEventListener('click', refresh);
+  $('save').addEventListener('click', saveCard);
+  window.__makeCard = makeCard;
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => drawRadar(+$('frame').value));
   refresh();
   if (!DEMO) setInterval(refresh, 10 * 60 * 1000);
