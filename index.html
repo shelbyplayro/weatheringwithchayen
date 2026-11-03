@@ -61,7 +61,7 @@ body{margin:0;font:16px/1.55 var(--body)}
 :root[data-style="doodle"] body{
   background-image:linear-gradient(var(--surface2) 1px,transparent 1px),linear-gradient(90deg,var(--surface2) 1px,transparent 1px);
   background-size:22px 22px}
-.wrap{max-width:480px;margin:0 auto;padding-block:16px 40px;
+.wrap{max-width:480px;margin:0 auto;padding-block:calc(env(safe-area-inset-top, 0px) + 24px) calc(env(safe-area-inset-bottom, 0px) + 40px);
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
   display:flex;flex-direction:column;gap:16px}
 .top{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -430,7 +430,7 @@ if (typeof window !== 'undefined') (() => {
   const POSES = {
     dry: [{ id: 'sun', cap: 'ฟ้าเปิด ออกไปได้' }, { id: 'shades', cap: 'ใส่แว่นกันแดดรอฝน' }, { id: 'nap', cap: 'งีบรอฝนก่อน' }, { id: 'pant', cap: 'แดดร้อน แลบลิ้นแป๊บ' }],
     maybe: [{ id: 'cloud', cap: 'ลุ้นหน่อย พกร่มไว้' }, { id: 'sniff', cap: 'ฟุดฟิด ได้กลิ่นฝน' }, { id: 'tilt', cap: 'ฝนจะมาไหมน้า' }],
-    wet: [{ id: 'wet', cap: 'ฝนมาแล้ว เย้!' }, { id: 'catch', cap: 'อ้าปากรับน้ำฝน' }, { id: 'shake', cap: 'สะบัดขน ซ่า!' }, { id: 'puddle', cap: 'กระโดดแอ่งน้ำ ตูม!' }],
+    wet: [{ id: 'lotus', cap: 'ฝนมาแล้ว เย้!' }, { id: 'wet', cap: 'เปียกฝนสนุก' }, { id: 'catch', cap: 'อ้าปากรับน้ำฝน' }, { id: 'shake', cap: 'สะบัดขน ซ่า!' }, { id: 'puddle', cap: 'กระโดดแอ่งน้ำ ตูม!' }],
     idle: [{ id: 'idle', cap: 'กำลังดมกลิ่นฝน…' }]
   };
   // 18:00–06:00
@@ -447,7 +447,7 @@ if (typeof window !== 'undefined') (() => {
     const BOOK = night ? NPOSES : POSES;
     const list = BOOK[mood] || BOOK.idle, pose = (list[poseIdx % list.length] || list[0]).id;
     const wet = mood === 'wet';
-    const fur = wet ? 'var(--dogwet)' : 'var(--dog)';
+    let fur = wet ? 'var(--dogwet)' : 'var(--dog)';
     const drop = (x, y, s = 1, f = 'var(--rain)') => `<path ${S(f)} d="M${x} ${y} q${-6 * s} ${10 * s} 0 ${14 * s} q${6 * s} ${-4 * s} 0 ${-14 * s} Z"/>`;
     const sun = (cx, cy, r) => `<g><circle ${o} cx="${cx}" cy="${cy}" r="${r}" ${S('#ffc93c')}/>` +
       [0, 45, 90, 135, 180, 225, 270, 315].map(a => { const q = a * Math.PI / 180, c = Math.cos(q), s = Math.sin(q);
@@ -469,6 +469,17 @@ if (typeof window !== 'undefined') (() => {
     const sleepy = `<path class="ink" d="M71 99 Q80 105 89 99"/><path class="ink" d="M111 99 Q120 105 129 99"/>`;
     const calm = `<path class="ink" d="M92 136 Q100 142 108 136"/>`;
     const toes = 'stroke="rgba(0,0,0,.18)" stroke-width="1.8" stroke-linecap="round" fill="none"';
+    const LEAF = '#5fae5a', LEAFD = '#3f8d45', LEAFL = '#9fd38f';
+    const lotus = (cx, cy, w, h, rot = 0) => {
+      const L = cx - w, R = cx + w, top = cy - h * 2.2;
+      const rim = [0, 1, 2, 3, 4].map(i => { const x0 = L + (2 * w) * i / 5, x1 = L + (2 * w) * (i + 1) / 5; return `Q${(x0 + x1) / 2} ${cy - h * .45} ${x1} ${cy}`; }).join(' ');
+      const veins = [-0.8, -0.45, -0.12, 0.2, 0.52, 0.85].map(f => `<path d="M${cx} ${top + h * .75} Q${cx + f * w * .55} ${cy - h * 1.1} ${cx + f * w * .98} ${cy - h * .25}" stroke="${LEAFL}" stroke-width="2" fill="none" stroke-linecap="round" opacity=".8"/>`).join('');
+      const beads = [[-.5, -1.2, 3.2], [.35, -1.5, 2.6], [.62, -.7, 2.2], [-.18, -.55, 2]].map(([fx, fy, r]) => `<circle cx="${cx + fx * w}" cy="${cy + fy * h}" r="${r}" fill="#dff3ff" opacity=".9"/><circle cx="${cx + fx * w - r * .35}" cy="${cy + fy * h - r * .35}" r="${r * .35}" fill="#fff"/>`).join('');
+      return `<g transform="rotate(${rot} ${cx} ${cy})">` +
+        `<path d="M${L} ${cy} ${rim} Q${cx} ${cy + h * .35} ${L} ${cy} Z" ${S(LEAFD)}/>` +
+        `<path d="M${L} ${cy} C${L + w * .18} ${top - h * .15} ${R - w * .18} ${top - h * .15} ${R} ${cy} Q${cx} ${cy - h * .35} ${L} ${cy} Z" ${S(LEAF)}/>` +
+        veins + `<circle cx="${cx}" cy="${top + h * .75}" r="3.5" ${S(LEAFD)}/>` + beads + `</g>`;
+    };
     const paw = (x, y, r = 0) => `<g transform="translate(${x} ${y}) rotate(${r})"><ellipse rx="13" ry="10" ${S(fur)} stroke="rgba(110,55,20,.35)" stroke-width="2"/><path d="M-5 1 L-5 6 M0 2 L0 7 M5 1 L5 6" ${toes}/></g>`;
     const moon = (x, y, r = 16) => `<path d="M${x} ${y - r} A${r} ${r} 0 1 0 ${x} ${y + r} A${r * 1.25} ${r * 1.25} 0 0 1 ${x} ${y - r} Z" ${S('#ffd66b')}/>`;
     const star = (x, y, r = 4) => `<path d="M${x} ${y - r} L${x + r * .3} ${y - r * .3} L${x + r} ${y} L${x + r * .3} ${y + r * .3} L${x} ${y + r} L${x - r * .3} ${y + r * .3} L${x - r} ${y} L${x - r * .3} ${y - r * .3} Z" ${S('#ffd66b')}/>`;
@@ -550,6 +561,11 @@ if (typeof window !== 'undefined') (() => {
       case 'yawn':
         eyes = sleepy; mouth = `<ellipse cx="100" cy="140" rx="8" ry="10" ${S('#7a2e35')}/><ellipse cx="100" cy="145" rx="5" ry="4" ${S('#ff7a8a')}/>`;
         back = moon(30, 30, 14) + star(176, 26, 4) + star(160, 6, 3); break;
+      case 'lotus':
+        fur = 'var(--dog)'; eyes = happyEyes; mouth = smileTongue; tilt = 5;
+        onHead = lotus(100, 66, 80, 14, -8);
+        back = `<g class="drops">` + drop(4, 40) + drop(196, 50) + drop(100, -10) + `</g>`;
+        front = drop(12, 84, .8) + drop(190, 66, .8) + drop(22, 108, .6); break;
       case 'puddle':
         eyes = sparkleEyes; mouth = smileTongue; onHead = wetFur;
         front = drop(20, 172, .9) + drop(180, 168, .9) + drop(36, 152, .7) + drop(164, 150, .7);
