@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-03T00:02:34.198Z",
+  "generated": "2026-11-03T06:59:22.799Z",
   "lat": 9.032759575862215,
   "lon": 98.94431140668654,
   "truth": "radar over the farm (any wet 10-min frame inside the 15-min slot)",
@@ -66,7 +66,7 @@
     }
   },
   "last_run": {
-    "at": "2026-11-03T00:02:31Z",
+    "at": "2026-11-03T06:59:19Z",
     "radar_frames": 12,
     "models_ok": 9,
     "motion": "radar"
