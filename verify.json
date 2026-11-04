@@ -1,12 +1,12 @@
 {
-  "generated": "2026-11-04T16:26:04.511Z",
+  "generated": "2026-11-04T22:13:09.238Z",
   "lat": 9.032759575862215,
   "lon": 98.94431140668654,
   "truth": "radar over the farm (any wet 10-min frame inside the 15-min slot)",
   "components": {
     "p": {
       "all": {
-        "n": 8,
+        "n": 9,
         "brier": 0.002,
         "base_rate": 0,
         "skill_vs_climatology": null
@@ -22,7 +22,7 @@
           "n": 0
         },
         "120-240min": {
-          "n": 8,
+          "n": 9,
           "brier": 0.002,
           "base_rate": 0,
           "skill_vs_climatology": null
@@ -31,8 +31,8 @@
       "reliability": [
         {
           "bin": "0-10%",
-          "n": 8,
-          "mean_forecast": 0.035,
+          "n": 9,
+          "mean_forecast": 0.038,
           "observed_freq": 0
         }
       ]
@@ -59,7 +59,7 @@
     },
     "p_model": {
       "all": {
-        "n": 8,
+        "n": 9,
         "brier": 0.002,
         "base_rate": 0,
         "skill_vs_climatology": null
@@ -75,7 +75,7 @@
           "n": 0
         },
         "120-240min": {
-          "n": 8,
+          "n": 9,
           "brier": 0.002,
           "base_rate": 0,
           "skill_vs_climatology": null
@@ -84,15 +84,15 @@
       "reliability": [
         {
           "bin": "0-10%",
-          "n": 8,
-          "mean_forecast": 0.035,
+          "n": 9,
+          "mean_forecast": 0.038,
           "observed_freq": 0
         }
       ]
     }
   },
   "last_run": {
-    "at": "2026-11-04T16:26:00Z",
+    "at": "2026-11-04T22:13:06Z",
     "radar_frames": 12,
     "models_ok": 9,
     "motion": "radar"
