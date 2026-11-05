@@ -121,6 +121,17 @@ button.hour:focus-visible{outline:3px solid var(--fg)}
 .quarters .q span{font:400 .7rem var(--mono);color:var(--muted)}
 .quarters .q b{font:600 1rem var(--display)}
 .quarters .q.wet b{color:var(--rain)} .quarters .q.maybe b{color:var(--tea)}
+.report{width:100%;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);display:flex;flex-direction:column;align-items:center;gap:8px}
+.report-q{font-size:.85rem;color:var(--muted)}
+.report-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:300px}
+.rbtn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;border-radius:999px;font:600 .92rem var(--display);cursor:pointer;background:var(--surface2);border:1.5px solid var(--line);color:var(--fg)}
+.rbtn.wet svg{color:var(--rain)} .rbtn.dry svg{color:#e0a020}
+.rbtn:active{transform:scale(.97)}
+.rbtn:focus-visible{outline:3px solid var(--tea);outline-offset:2px}
+.report-last{font-size:.78rem;color:var(--muted)}
+.hero.night .report{border-color:rgba(255,255,255,.18)}
+.hero.night .report-q,.hero.night .report-last{color:#c3cbea}
+.hero.night .rbtn{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#f4f6ff}
 .backall{margin-top:6px;font:500 .85rem var(--body);color:var(--tea);background:none;border:0;cursor:pointer;padding:8px 10px;min-height:40px;text-decoration:underline;text-underline-offset:3px}
 .hour .t{font:500 .78rem var(--mono);color:var(--muted)}
 .hour .p{font:600 1.15rem var(--display);font-variant-numeric:tabular-nums}
@@ -206,6 +217,14 @@ footer a{color:inherit}
     <div class="quarters" id="quarters" hidden></div>
     <button class="backall" id="backAll" type="button" hidden>กลับภาพรวม</button>
     <div class="updated" id="updated"></div>
+    <div class="report" id="report">
+      <span class="report-q">ที่สวนตอนนี้เป็นยังไง</span>
+      <div class="report-btns">
+        <button type="button" class="rbtn wet" data-obs="rain"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M7 15a4.5 4.5 0 0 1 .5-9 6 6 0 0 1 11 1.5 3.8 3.8 0 0 1-.5 7.5Z"/><path d="M9 18l-1 3M13 18l-1 3M17 18l-1 3"/></svg>ฝนตกอยู่</button>
+        <button type="button" class="rbtn dry" data-obs="dry"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg>ไม่ตก</button>
+      </div>
+      <div class="report-last" id="reportLast" hidden></div>
+    </div>
   </div>
   <div class="warn" id="warn" hidden></div>
   <div class="toast" id="toast" role="status" hidden></div>
@@ -897,7 +916,7 @@ if (typeof window !== 'undefined') (() => {
       if (!state.models || (!state.models.ens.length && !state.models.det.length)) problems.push('ดึงแบบจำลองไม่ได้');
       state.radar = analyseRadar(state.frames, state.models);
     }
-    const slots = buildSlots(state.models, state.radar);
+    const slots = buildSlots(state.models, state.radar); state.slots = slots;
     renderVerdict(slots, !!(state.radar && state.radar.rainingNow),
       DEMO ? 'ข้อมูลตัวอย่าง' : 'ดมกลิ่นล่าสุด ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }));
     renderHours(slots); renderStrip(slots);
@@ -1005,6 +1024,46 @@ if (typeof window !== 'undefined') (() => {
   $('frame').addEventListener('input', e => drawRadar(+e.target.value));
   $('refresh').addEventListener('click', refresh);
   $('save').addEventListener('click', saveCard);
+
+  /* ---------- report what actually happened (GitHub issue) ---------- */
+  const REPO = (() => {
+    const own = location.hostname.endsWith('.github.io') ? location.hostname.split('.')[0] : '';
+    const rp = location.pathname.split('/').filter(Boolean)[0];
+    return own && rp ? `${own}/${rp}` : 'shelbyplayro/weatheringwithchayen';
+  })();
+  function lastReport() { try { return JSON.parse(localStorage.getItem('chayen-last-report') || 'null'); } catch (e) { return null; } }
+  function showLastReport() {
+    const r = lastReport(), el = $('reportLast'); if (!r) { el.hidden = true; return; }
+    el.textContent = `แจ้งล่าสุด ${new Date(r.at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} · ${r.obs === 'rain' ? 'ฝนตก' : 'ไม่ตก'}`; el.hidden = false;
+  }
+  function report(obs) {
+    const now = new Date(), nowS = now.getTime() / 1000, slots = state.slots || [];
+    const cur = slots.find(x => x.tSec - 900 <= nowS && nowS < x.tSec) || slots[0];
+    const pNow = cur && cur.p != null ? Math.round(cur.p * 100) : '';
+    const radarNow = state.radar ? (state.radar.rainingNow ? 'rain' : 'dry') : 'unknown';
+    const local = now.toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Bangkok' });
+    const title = `[รายงานฝน] ${obs === 'rain' ? 'ฝนตก' : 'ไม่ตก'} ${local}`;
+    const body = [
+      `ที่สวน${obs === 'rain' ? 'ฝนตกอยู่' : 'ไม่มีฝน'} ตอน ${local}`, '',
+      'หมายเหตุ (ไม่ต้องกรอกก็ได้):', '', '',
+      '<!-- ข้อมูลสำหรับตัวบันทึก ห้ามแก้ -->',
+      '```chayen-report',
+      `observed: ${obs}`,
+      `at: ${now.toISOString()}`,
+      `lat: ${LAT}`, `lon: ${LON}`,
+      `forecast_p_now: ${pNow}`,
+      `forecast_text: ${$('verdict').textContent}`,
+      `radar_now: ${radarNow}`,
+      '```'
+    ].join('\n');
+    try { localStorage.setItem('chayen-last-report', JSON.stringify({ at: now.toISOString(), obs })); } catch (e) {}
+    showLastReport();
+    const url = `https://github.com/${REPO}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+    const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove();
+    toast('ชาเย็นจดไว้แล้ว กด Submit ในหน้า GitHub ด้วยนะ');
+  }
+  document.querySelectorAll('.rbtn').forEach(b => b.addEventListener('click', () => report(b.dataset.obs)));
+  showLastReport();
   $('backAll').addEventListener('click', showOverview);
   window.__makeCard = makeCard; window.__dog = dogSVG;
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => drawRadar(+$('frame').value));
