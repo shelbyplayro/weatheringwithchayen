@@ -145,6 +145,53 @@ function verify(fc, obs) {
   return out;
 }
 
+/* ---------- reports from the app (GitHub issues titled [รายงานฝน]) ---------- */
+async function loadReports() {
+  const repo = process.env.GITHUB_REPOSITORY, token = process.env.GITHUB_TOKEN;
+  if (!repo || !token) return null;
+  const out = [];
+  for (let page = 1; page <= 10; page++) {
+    const r = await fetchFn(`https://api.github.com/repos/${repo}/issues?state=all&per_page=100&page=${page}`,
+      { headers: { authorization: `Bearer ${token}`, accept: 'application/vnd.github+json', 'user-agent': 'chayen-log' } });
+    if (!r.ok) throw new Error(`issues ${r.status}`);
+    const list = await r.json(); if (!list.length) break;
+    for (const it of list) {
+      if (it.pull_request || !String(it.title || '').startsWith('[รายงานฝน]')) continue;
+      if (!['OWNER', 'MEMBER', 'COLLABORATOR'].includes(it.author_association)) continue;   // public repo: only trust the owner's reports
+      const m = String(it.body || '').match(/```chayen-report([\s\S]*?)```/); if (!m) continue;
+      const kv = Object.fromEntries(m[1].split('\n').map(l => l.match(/^\s*([a-z_]+):\s*(.*?)\s*$/)).filter(Boolean).map(x => [x[1], x[2]]));
+      if (!['rain', 'dry'].includes(kv.observed) || !Date.parse(kv.at)) continue;
+      out.push({ issue: it.number, at: new Date(kv.at).toISOString().replace('.000Z', 'Z'), observed: kv.observed,
+        app_p_now: kv.forecast_p_now ?? '', app_radar_now: kv.radar_now ?? '' });
+    }
+    if (list.length < 100) break;
+  }
+  return out.sort((a, b) => a.at.localeCompare(b.at));
+}
+function scoreReports(reports, fc, obs) {
+  const rows = reports.map(r => {
+    const T = Date.parse(r.at) / 1000;
+    const inSlot = fc.filter(f => { const t0 = Date.parse(f.target) / 1000; return T >= t0 && T < t0 + 900 && Date.parse(f.issued) / 1000 <= T; });
+    const latest = inSlot.sort((a, b) => b.issued.localeCompare(a.issued))[0];
+    const ahead = inSlot.filter(f => +f.lead_min >= 60 && +f.lead_min <= 120).sort((a, b) => b.issued.localeCompare(a.issued))[0];
+    const near = obs.filter(o => Math.abs(Date.parse(o.frame_time) / 1000 - T) <= 600);
+    return { ...r, p_latest: latest ? latest.p : '', p_1to2h_ahead: ahead ? ahead.p : '',
+      radar_wet_pm10min: near.length ? (near.some(o => o.wet === '1') ? 1 : 0) : '' };
+  });
+  const y = r => (r.observed === 'rain' ? 1 : 0);
+  const conf = (list, key) => {
+    const L = list.filter(r => r[key] !== ''); const c = { n: L.length, hit: 0, miss: 0, false_alarm: 0, correct_dry: 0 };
+    for (const r of L) { const f = +r[key] >= 0.5 ? 1 : 0, o = y(r); c[f && o ? 'hit' : !f && o ? 'miss' : f && !o ? 'false_alarm' : 'correct_dry']++; }
+    return c;
+  };
+  const rad = rows.filter(r => r.radar_wet_pm10min !== '');
+  return { rows, summary: {
+    n: rows.length, observed_rain: rows.filter(r => y(r)).length,
+    forecast_latest: conf(rows, 'p_latest'), forecast_1to2h_ahead: conf(rows, 'p_1to2h_ahead'),
+    radar_agrees_with_report: rad.length ? r3(rad.filter(r => r.radar_wet_pm10min === y(r)).length / rad.length) : null, radar_compared: rad.length,
+    note: 'threshold 50%; miss = said dry but it rained, false_alarm = said rain but it stayed dry' } };
+}
+
 /* ---------- main ---------- */
 export async function run() {
   fs.mkdirSync(DATA, { recursive: true });
@@ -176,6 +223,13 @@ export async function run() {
 
   // 3. scores
   const v = verify(readCSV(path.join(DATA, 'forecasts.csv')), readCSV(obsFile));
+  const reports = await loadReports().catch(e => { console.error('reports:', e.message); return null; });
+  if (reports) {
+    const sr = scoreReports(reports, readCSV(path.join(DATA, 'forecasts.csv')), readCSV(obsFile));
+    const head = ['issue', 'at', 'observed', 'p_latest', 'p_1to2h_ahead', 'radar_wet_pm10min', 'app_p_now', 'app_radar_now'];
+    fs.writeFileSync(path.join(DATA, 'reports.csv'), head.join(',') + '\n' + sr.rows.map(r => head.map(h => r[h] ?? '').join(',')).join('\n') + (sr.rows.length ? '\n' : ''));
+    v.reports = sr.summary;
+  }
   v.last_run = { at: iso(now), radar_frames: frames.length, models_ok: models ? models.ens.length + models.det.length : 0, motion: radar ? radar.source : 'none' };
   fs.writeFileSync(path.join(DATA, 'verify.json'), JSON.stringify(v, null, 2) + '\n');
   console.log(`run ${iso(now)} · frames ${frames.length} · models ${v.last_run.models_ok} · verified pairs ${v.components.p.all.n}`);
