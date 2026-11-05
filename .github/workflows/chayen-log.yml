@@ -1,14 +1,18 @@
 # ทุก 20 นาที: บันทึกพยากรณ์ บันทึกฝนที่เรดาร์เห็นตรงสวน แล้วคิดคะแนนความแม่น
-# ผลอยู่ใน branch "data" (forecasts.csv, observed.csv, verify.json) แยกจาก main เพื่อไม่ให้หน้าเว็บ build ใหม่ทุกครั้ง
+# รวมรายงาน "ฝนตก/ไม่ตก" ที่ส่งจากปุ่มในแอป (issue ชื่อขึ้นต้น [รายงานฝน]) ไปคิดคะแนนด้วย
+# ผลอยู่ใน branch "data" (forecasts.csv, observed.csv, reports.csv, verify.json) แยกจาก main เพื่อไม่ให้หน้าเว็บ build ใหม่ทุกครั้ง
 name: chayen-log
 
 on:
   schedule:
     - cron: "*/20 * * * *"
   workflow_dispatch:
+  issues:
+    types: [opened, edited]
 
 permissions:
   contents: write
+  issues: read
 
 concurrency:
   group: chayen-log
@@ -19,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Check out data branch
         run: |
@@ -33,9 +37,9 @@ jobs:
             git rm -rf --quiet .
           fi
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install
         run: npm install --prefix tools --no-audit --no-fund
@@ -44,6 +48,7 @@ jobs:
         run: node tools/log.mjs
         env:
           DATA_DIR: ${{ github.workspace }}/data
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Save to data branch
         working-directory: data
