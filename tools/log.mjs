@@ -58,7 +58,7 @@ async function loadModels(now) {
   const q = `latitude=${LAT}&longitude=${LON}&forecast_hours=7&past_hours=1&timeformat=unixtime`;
   const ens = await Promise.allSettled(ENS_MODELS.map(m => getJSON(`${OME}?${q}&hourly=precipitation&models=${m}`).then(j => ({ m, j }))));
   const det = await Promise.allSettled(DET_MODELS.map(m => getJSON(`${OM}?${q}&hourly=precipitation,precipitation_probability&models=${m}`).then(j => ({ m, j }))));
-  const wind = await getJSON(`${OM}?latitude=${LAT}&longitude=${LON}&hourly=wind_speed_700hPa,wind_direction_700hPa&forecast_hours=2&timeformat=unixtime`).catch(() => null);
+  const wind = await getJSON(`${OM}?latitude=${LAT}&longitude=${LON}&hourly=wind_speed_700hPa,wind_direction_700hPa,wind_speed_10m,wind_direction_10m,wind_gusts_10m&forecast_hours=3&timeformat=unixtime`).catch(() => null);
   return { now, ens: ens.filter(r => r.status === 'fulfilled').map(r => r.value), det: det.filter(r => r.status === 'fulfilled').map(r => r.value), wind };
 }
 // same weighting as the page
@@ -91,12 +91,16 @@ function analyseRadar(ok, models) {
     vx = pairs.reduce((a, b) => a + b.vx * b.conf, 0) / sw; vy = pairs.reduce((a, b) => a + b.vy * b.conf, 0) / sw;
     conf = Math.min(1, sw / pairs.length * 2); source = 'radar';
   }
-  if (conf < 0.25 && models && models.wind && models.wind.hourly) {
+  let steer = null;
+  if (models && models.wind && models.wind.hourly) {
     const h = models.wind.hourly, i = Math.max(0, Core.hourIndexFor(h.time, models.now) - 1);
     const sp = h.wind_speed_700hPa[i], dr = h.wind_direction_700hPa[i];
-    if (sp != null && dr != null) { const s = Core.steeringFromWind(sp, dr, LAT); vx = s.vx; vy = s.vy; conf = 0.3; source = 'wind'; }
+    if (sp != null && dr != null) steer = Core.steeringFromWind(sp, dr, LAT);
   }
-  return { last, vx, vy, conf, source };
+  const agree = source === 'radar' && steer ? Core.motionAgreement(vx, vy, steer.vx, steer.vy) : null;
+  if (conf < 0.25 && steer) { vx = steer.vx; vy = steer.vy; conf = 0.3; source = 'wind'; }
+  const near = Core.nearestRain(last.mask, W, H, px, py);
+  return { last, vx, vy, conf, source, steer, agree, near, approach: Core.rainApproach(near, vx, vy, conf, LAT) };
 }
 
 /* ---------- csv helpers ---------- */
@@ -161,7 +165,7 @@ async function loadReports() {
       const m = String(it.body || '').match(/```chayen-report([\s\S]*?)```/); if (!m) continue;
       const kv = Object.fromEntries(m[1].split('\n').map(l => l.match(/^\s*([a-z_]+):\s*(.*?)\s*$/)).filter(Boolean).map(x => [x[1], x[2]]));
       if (!['rain', 'dry'].includes(kv.observed) || !Date.parse(kv.at)) continue;
-      out.push({ issue: it.number, at: new Date(kv.at).toISOString().replace('.000Z', 'Z'), observed: kv.observed,
+      out.push({ issue: it.number, at: new Date(kv.at).toISOString().replace('.000Z', 'Z'), observed: kv.observed, intensity: kv.intensity ?? '',
         app_p_now: kv.forecast_p_now ?? '', app_radar_now: kv.radar_now ?? '' });
     }
     if (list.length < 100) break;
@@ -187,6 +191,7 @@ function scoreReports(reports, fc, obs) {
   const rad = rows.filter(r => r.radar_wet_pm10min !== '');
   return { rows, summary: {
     n: rows.length, observed_rain: rows.filter(r => y(r)).length,
+    by_intensity: Object.fromEntries(['light', 'moderate', 'heavy'].map(k => [k, rows.filter(r => r.intensity === k).length])),
     forecast_latest: conf(rows, 'p_latest'), forecast_1to2h_ahead: conf(rows, 'p_1to2h_ahead'),
     radar_agrees_with_report: rad.length ? r3(rad.filter(r => r.radar_wet_pm10min === y(r)).length / rad.length) : null, radar_compared: rad.length,
     note: 'threshold 50%; miss = said dry but it rained, false_alarm = said rain but it stayed dry' } };
@@ -213,6 +218,16 @@ export async function run() {
     blended.filter(s => s.p != null).map(s => ({ issued: iso(now), target: iso(s.tSec), lead_min: s.t, p: r3(s.p), p_radar: r3(s.radar), p_model: r3(s.model),
       motion: radar ? radar.source : 'none', motion_conf: radar ? r3(radar.conf) : '', radar_age_min: radar ? Math.round(radarAge) : '' })));
 
+  // 1b. wind snapshot: for checking later whether wind regime or radar/wind disagreement explains misses
+  const sw = models ? Core.surfaceWind(models.wind, now) : null, ap = radar ? radar.approach : null;
+  appendCSV(path.join(DATA, 'wind.csv'), ['at', 'wind10_kmh', 'wind10_from', 'gust10_kmh', 'steer_kmh', 'radar_kmh', 'agree_angle', 'agree_ratio', 'approach', 'rain_km', 'rain_bearing', 'eta_min'], [{
+    at: iso(now), wind10_kmh: sw ? r3(sw.speed) : '', wind10_from: sw && sw.from != null ? Math.round(sw.from) : '', gust10_kmh: sw && sw.gust != null ? r3(sw.gust) : '',
+    steer_kmh: radar && radar.steer ? r3(Math.hypot(radar.steer.vx, radar.steer.vy) * Core.kmPerPx(LAT) * 60) : '',
+    radar_kmh: radar ? r3(Math.hypot(radar.vx, radar.vy) * Core.kmPerPx(LAT) * 60) : '',
+    agree_angle: radar && radar.agree ? radar.agree.angle : '', agree_ratio: radar && radar.agree ? r3(radar.agree.ratio) : '',
+    approach: ap ? ap.state : '', rain_km: ap && ap.distKm != null ? r3(ap.distKm) : '', rain_bearing: ap && ap.bearing != null ? Math.round(ap.bearing) : '', eta_min: ap && ap.etaMin != null ? ap.etaMin : ''
+  }]);
+
   // 2. observations (one row per radar frame, no duplicates)
   const obsFile = path.join(DATA, 'observed.csv');
   const seen = new Set(readCSV(obsFile).map(o => o.frame_time));
@@ -226,7 +241,7 @@ export async function run() {
   const reports = await loadReports().catch(e => { console.error('reports:', e.message); return null; });
   if (reports) {
     const sr = scoreReports(reports, readCSV(path.join(DATA, 'forecasts.csv')), readCSV(obsFile));
-    const head = ['issue', 'at', 'observed', 'p_latest', 'p_1to2h_ahead', 'radar_wet_pm10min', 'app_p_now', 'app_radar_now'];
+    const head = ['issue', 'at', 'observed', 'intensity', 'p_latest', 'p_1to2h_ahead', 'radar_wet_pm10min', 'app_p_now', 'app_radar_now'];
     fs.writeFileSync(path.join(DATA, 'reports.csv'), head.join(',') + '\n' + sr.rows.map(r => head.map(h => r[h] ?? '').join(',')).join('\n') + (sr.rows.length ? '\n' : ''));
     v.reports = sr.summary;
   }
