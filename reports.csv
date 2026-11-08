@@ -1,4 +1,4 @@
-issue,at,observed,p_latest,p_1to2h_ahead,radar_wet_pm10min,app_p_now,app_radar_now
-1,2026-11-08T05:45:30.342Z,dry,,,1,95,rain
-2,2026-11-08T10:04:45.834Z,rain,,,1,78,dry
-3,2026-11-08T10:59:07.905Z,dry,0.73,,1,99,rain
+issue,at,observed,intensity,p_latest,p_1to2h_ahead,radar_wet_pm10min,app_p_now,app_radar_now
+1,2026-11-08T05:45:30.342Z,dry,,,,1,95,rain
+2,2026-11-08T10:04:45.834Z,rain,,,,1,78,dry
+3,2026-11-08T10:59:07.905Z,dry,,0.73,,1,99,rain
