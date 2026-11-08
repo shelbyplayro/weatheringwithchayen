@@ -1,3 +1,4 @@
 at,wind10_kmh,wind10_from,gust10_kmh,steer_kmh,radar_kmh,agree_angle,agree_ratio,approach,rain_km,rain_bearing,eta_min
 2026-11-08T13:03:54Z,8.9,24,16.2,26.32,15.282,3,0.581,leave,51.669,297,
 2026-11-08T18:24:43Z,11.9,22,19.4,29.12,27.129,7,0.932,approach,40.973,76,95
+2026-11-08T22:28:58Z,9.6,12,17.3,30.32,21.741,2,0.717,approach,2.306,78,7
