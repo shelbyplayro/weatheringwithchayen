@@ -57,7 +57,7 @@ Weather data by [RainViewer](https://www.rainviewer.com) · [Open-Meteo](https:/
 
 หน้าหลักมีเพื่อนสองตัวขนาดเท่ากัน ชาเย็นดมกลิ่นฝน (โอกาสฝน) ชานมดูลม (ทิศ ความเร็ว กระโชก และฝนที่ใกล้ที่สุดกำลังเข้าใกล้หรือเคลื่อนออก พร้อมเวลาโดยประมาณ) ข้อมูลของชานมใช้แสดงผลและบันทึกลง `wind.csv` เท่านั้น ยังไม่ปรับตัวเลขโอกาสฝน
 
-รูปชานมใส่ที่ `CHAONM_STICKERS` ใน `index.html` (คีย์ `calm, light, strong, gust, approach, leave, away, unsure`) เพิ่มท่า `run, sniff, pinwheel` สำหรับรายชั่วโมง
+รูปชานมใส่ที่ `CHAONM_STICKERS` ใน `index.html` (คีย์ `calm, light, strong, gust, approach, leave, away, unsure`) เพิ่มท่า `run, sniff, pinwheel` สำหรับรายชั่วโมง ท่ากลางคืน `n_sleep, n_zz, n_wrap, n_rain` ท่าฝนตกที่สวน `shelter` และท่าไม่มีข้อมูล `nodata`
 
 ## รูปแชร์
 
