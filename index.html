@@ -153,7 +153,7 @@ button.hour:focus-visible{outline:3px solid var(--fg)}
 .hero.night .report-q,.hero.night .report-last{color:#c3cbea}
 .hero.night .rbtn{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#f4f6ff}
 .backall{margin-top:6px;font:500 .85rem var(--body);color:var(--tea);background:none;border:0;cursor:pointer;padding:8px 10px;min-height:40px;text-decoration:underline;text-underline-offset:3px}
-.hour .t{font:500 .66rem var(--mono);color:var(--muted);letter-spacing:-.02em;white-space:nowrap}
+.hour .t{font:500 .82rem var(--mono);color:var(--muted);white-space:nowrap}
 .hour .pk{font:400 .66rem var(--mono);color:var(--muted);min-height:1em}
 .hour .p{font:600 1.15rem var(--display);font-variant-numeric:tabular-nums}
 .hour .ic{width:30px;height:30px}
@@ -928,7 +928,7 @@ if (typeof window !== 'undefined') (() => {
       const d = document.createElement('button'); d.type = 'button';
       d.className = 'hour ' + lv; d.setAttribute('aria-pressed', state.sel === h ? 'true' : 'false');
       d.setAttribute('aria-label', `ดูช่วง ${qs4[0].label}–${end} โอกาสฝนสูงสุด ${p == null ? 'ไม่มีข้อมูล' : Math.round(p * 100) + '% ช่วง ' + peak}`);
-      d.innerHTML = `<span class="t">${qs4[0].label}–${end}</span>${iconSVG(lv, isNight(qs4[0].tSec))}<span class="p">${p == null ? '–' : Math.round(p * 100) + '%'}</span><span class="pk">${peak ? 'สูงสุด ' + peak : ''}</span>`;
+      d.innerHTML = `<span class="t">${qs4[0].label}</span>${iconSVG(lv, isNight(qs4[0].tSec))}<span class="p">${p == null ? '–' : Math.round(p * 100) + '%'}</span><span class="pk">${peak ? 'สูงสุด ' + peak : ''}</span>`;
       d.addEventListener('click', () => (state.sel === h ? showOverview() : showHour(h)));
       box.appendChild(d);
     }
@@ -1191,7 +1191,7 @@ if (typeof window !== 'undefined') (() => {
     const cw = 200, gap = 20, x0 = (W2 - (4 * cw + 3 * gap)) / 2, cy = top + boxH + 25;
     (state.hours || []).forEach((hh, i) => {
       const x = x0 + i * (cw + gap); g.fillStyle = '#f3f6fa'; rr(g, x, cy, cw, 150, 30); g.fill();
-      g.font = `500 24px ${M}`; g.fillStyle = '#66727f'; g.fillText(`${hh.label}–${hh.end}`, x + cw / 2, cy + 40);
+      g.font = `500 28px ${M}`; g.fillStyle = '#66727f'; g.fillText(hh.label, x + cw / 2, cy + 42);
       g.font = `700 50px ${F}`; g.fillStyle = hh.p == null ? '#66727f' : (hh.lv === 'dry' ? '#1d2733' : LV_COLOR[hh.lv]);
       g.fillText(hh.p == null ? '–' : Math.round(hh.p * 100) + '%', x + cw / 2, cy + 100);
       g.font = `400 22px ${M}`; g.fillStyle = '#66727f'; if (hh.peak) g.fillText('สูงสุด ' + hh.peak, x + cw / 2, cy + 134);
