@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-10T02:48:03.739Z",
+  "generated": "2026-11-10T09:20:26.218Z",
   "lat": 9.032759575862215,
   "lon": 98.94431140668654,
   "truth": "radar over the farm (any wet 10-min frame inside the 15-min slot)",
@@ -225,7 +225,7 @@
     }
   },
   "reports": {
-    "n": 3,
+    "n": 4,
     "observed_rain": 1,
     "by_intensity": {
       "light": 0,
@@ -246,12 +246,12 @@
       "false_alarm": 0,
       "correct_dry": 0
     },
-    "radar_agrees_with_report": 0.333,
-    "radar_compared": 3,
+    "radar_agrees_with_report": 0.25,
+    "radar_compared": 4,
     "note": "threshold 50%; miss = said dry but it rained, false_alarm = said rain but it stayed dry"
   },
   "last_run": {
-    "at": "2026-11-10T02:48:00Z",
+    "at": "2026-11-10T09:20:23Z",
     "radar_frames": 12,
     "models_ok": 9,
     "motion": "radar"
