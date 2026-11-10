@@ -1141,7 +1141,7 @@ if (typeof window !== 'undefined') (() => {
   async function makeCard() {
     await (document.fonts ? document.fonts.ready : Promise.resolve());
     const RW = 880, RH = 470, rad = radarForCard(RW);
-    const S = state.snap, W2 = 1080, H2 = rad ? 1790 : 1290, c = document.createElement('canvas'); c.width = W2; c.height = H2;
+    const S = state.snap, W2 = 1080, H2 = rad ? 1860 : 1360, c = document.createElement('canvas'); c.width = W2; c.height = H2;
     const g = c.getContext('2d'), F = 'Anuphan, "IBM Plex Sans Thai", sans-serif', M = '"IBM Plex Mono", monospace';
     const bg = S.night ? ['#1c2547', '#3a4a80'] : (CARD_BG[S.mood] || CARD_BG.idle), grd = g.createLinearGradient(0, 0, 0, H2);
     grd.addColorStop(0, bg[0]); grd.addColorStop(1, bg[1]); g.fillStyle = grd; g.fillRect(0, 0, W2, H2);
@@ -1169,7 +1169,7 @@ if (typeof window !== 'undefined') (() => {
       g.textAlign = 'left'; g.font = `700 36px ${F}`; g.fillStyle = '#1d2733'; g.fillText(wrapLines(g, txt || '', 950 - tx)[0] || '', tx, y + 3);
     });
     // two friends, side by side, equal size
-    const cols = [100, 550], colW = 430, top = 370, boxH = 520;
+    const cols = [100, 550], colW = 430, top = 370, boxH = 590;
     const dogA = await loadImg(CHAIYEN_STICKERS[chaiyenStickerIndex(S.mood, S.pose || 0, !!S.night)], false);
     const dogB = await loadImg(CHAONM_STICKERS[WS ? WS.pose : 'sniff'] || CHAONM_STICKERS.unsure, false);
     const friends = [
@@ -1185,7 +1185,7 @@ if (typeof window !== 'undefined') (() => {
       let y = top + 446; g.font = `600 28px ${F}`; const pw = Math.min(colW - 30, g.measureText(f.tag).width + 52);
       g.fillStyle = f.color; rr(g, cx - pw / 2, y - 36, pw, 52, 26); g.fill(); g.fillStyle = '#fff'; g.fillText(f.tag, cx, y);
       g.font = `400 26px ${F}`; g.fillStyle = '#66727f'; y += 54;
-      for (const ln of wrapLines(g, f.sub || '', colW - 40).slice(0, 2)) { g.fillText(ln, cx, y); y += 34; }
+      for (const ln of (f.sub || '').split(' · ').flatMap(part => wrapLines(g, part, colW - 40)).slice(0, 3)) { g.fillText(ln, cx, y); y += 34; }
     });
     // hour chips
     const cw = 200, gap = 20, x0 = (W2 - (4 * cw + 3 * gap)) / 2, cy = top + boxH + 25;
