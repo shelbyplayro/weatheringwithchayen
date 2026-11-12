@@ -87,7 +87,7 @@ body{margin:0;font:16px/1.55 var(--body)}
 .hero.night .quarters .q{background:rgba(255,255,255,.1)}
 .hero.night .quarters .q span{color:#c3cbea}
 .hero.night .quarters .q b{color:#f4f6ff}
-.hero.night .quarters .q.wet b{color:#9fc2ff}
+.hero.night .quarters .q.wet b,.hero.night .quarters .q.soon b{color:#9fc2ff}
 .hero.night .backall{color:#ffd66b}
 .hero.night{--surface:#2a3766;--lo:#55648f;--muted:#aab4d6}
 .hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding-top:10px}
@@ -112,7 +112,7 @@ body{margin:0;font:16px/1.55 var(--body)}
 .dog .ink{stroke:var(--ink);stroke-width:4;fill:none;stroke-linecap:round}
 :root[data-style="doodle"] .dog{filter:url(#wobble)}
 .mood{display:inline-block;font:500 .85rem var(--display);padding:3px 12px;border-radius:999px;border:var(--bw) solid var(--outline);color:#fff}
-.mood.dry{background:var(--dry)} .mood.maybe{background:var(--maybe);color:#2b2200} .mood.wet{background:var(--rain)} .mood.idle,.mood.nodata{background:var(--muted)}
+.mood.dry{background:var(--dry)} .mood.maybe{background:var(--maybe);color:#2b2200} .mood.wet,.mood.soon{background:var(--rain)} .mood.idle,.mood.nodata{background:var(--muted)}
 .answer{font:600 1.6rem/1.3 var(--display);margin:4px 0 0;text-wrap:balance}
 .sub{color:var(--muted);font-size:.92rem}
 .updated{font:400 .75rem var(--mono);color:var(--muted);margin-top:4px}
@@ -136,7 +136,7 @@ button.hour:focus-visible{outline:3px solid var(--fg)}
 .quarters .q{background:var(--surface2);border-radius:12px;padding:6px 2px;display:flex;flex-direction:column;align-items:center}
 .quarters .q span{font:400 .7rem var(--mono);color:var(--muted)}
 .quarters .q b{font:600 1rem var(--display)}
-.quarters .q.wet b{color:var(--rain)} .quarters .q.maybe b{color:var(--tea)}
+.quarters .q.wet b,.quarters .q.soon b{color:var(--rain)} .quarters .q.maybe b{color:var(--tea)}
 .report{width:100%;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);display:flex;flex-direction:column;align-items:center;gap:8px}
 .report-q{font-size:.85rem;color:var(--muted)}
 .report-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:340px}
@@ -159,7 +159,7 @@ button.hour:focus-visible{outline:3px solid var(--fg)}
 .hour .pk{font:400 .66rem var(--mono);color:var(--muted);min-height:1em}
 .hour .p{font:600 1.15rem var(--display);font-variant-numeric:tabular-nums}
 .hour .ic{width:30px;height:30px}
-.hour.wet .p{color:var(--rain)} .hour.maybe .p{color:var(--tea)}
+.hour.wet .p,.hour.soon .p{color:var(--rain)} .hour.maybe .p{color:var(--tea)}
 
 .tip{margin:-6px 0 0;text-align:center;font-size:.8rem;color:var(--muted)}
 h2{font:600 1rem var(--display);margin:0 0 10px}
@@ -527,16 +527,25 @@ const Core = (() => {
     });
   }
 
-  function verdict(slots, rainingNow) {
+  // One scale for every place a chance becomes words or a mood:
+  //   < 30% dry · 30–59% maybe (มีลุ้น, no time promised) · 60–79% soon (น่าจะมา + time) · >= 80% sure (มาแน่ + time) · raining now = wet
+  const P_MAYBE = 0.3, P_LIKELY = 0.6, P_SURE = 0.8;
+  // radarClear: radar works and sees no rain within ~60 km, so anything later than an hour rests on the models alone
+  function verdict(slots, rainingNow, radarClear) {
     const valid = slots.filter(s => s.p != null);
     if (!valid.length) return { cls: '', text: 'ยังไม่มีข้อมูล', sub: '' };
+    const pc = p => Math.round(p * 100) + '%';
     if (rainingNow) { const ease = valid.find(s => s.p < 0.4);
       return { cls: 'wet', text: 'ฝนตกที่สวนแล้ว', sub: ease ? `โอกาสฝนเริ่มลดช่วง ${ease.label}` : 'โอกาสฝนยังสูงตลอด 4 ชั่วโมง' }; }
-    const first = valid.find(s => s.p >= 0.5);
     const max = valid.reduce((a, b) => (b.p > a.p ? b : a));
-    if (first) return { cls: 'wet', text: first.t <= 15 ? 'ฝนจะมาในไม่ถึง 15 นาที' : `ฝนจะมาในอีกราว ${fmtLead(first.t)}`, sub: `โอกาสสูงสุด ${Math.round(max.p * 100)}% ช่วง ${max.label}`, first };
-    if (max.p >= 0.25) return { cls: 'maybe', text: 'อาจมีฝนนิดหน่อย', sub: `โอกาสสูงสุด ${Math.round(max.p * 100)}% ช่วง ${max.label}` };
-    return { cls: 'dry', text: '4 ชั่วโมงนี้ฝนไม่มา', sub: `โอกาสสูงสุด ${Math.round(max.p * 100)}% ช่วง ${max.label}` };
+    const clear = radarClear ? ' · เรดาร์ยังไม่เห็นฝนใกล้สวน' : '';
+    const first = valid.find(s => s.p >= P_LIKELY);
+    if (first) {
+      const sure = max.p >= P_SURE && !(radarClear && first.t > 60), when = first.t <= 15 ? 'ในไม่ถึง 15 นาที' : `ในอีกราว ${fmtLead(first.t)}`;
+      return { cls: 'soon', text: (sure ? 'ฝนมาแน่ ' : 'ฝนน่าจะมา') + when, sub: `โอกาสสูงสุด ${pc(max.p)} ช่วง ${max.label}` + clear, first };
+    }
+    if (max.p >= P_MAYBE) return { cls: 'maybe', text: `มีลุ้นฝนช่วง ${max.label}`, sub: `โอกาสสูงสุด ${pc(max.p)} ยังไม่แน่` + clear };
+    return { cls: 'dry', text: '4 ชั่วโมงนี้ฝนไม่น่ามา', sub: `โอกาสสูงสุด ${pc(max.p)} ช่วง ${max.label}` };
   }
   function fmtLead(t) { if (t < 60) return `${t} นาที`; const h = Math.floor(t / 60), m = t % 60; return m ? `${h} ชม. ${m} นาที` : `${h} ชั่วโมง`; }
 
@@ -623,7 +632,7 @@ const Core = (() => {
   }
   // Wind friend for one future hour: wind at that hour + the rain chance there. soon = this is the first hour (radar still useful).
   function windSlotStory(sw, p, ap, soon, swNow) {
-    const rainy = p != null && p >= 0.6, maybe = p != null && p >= 0.3 && p < 0.6, dry = p != null && p < 0.3;
+    const rainy = p != null && p >= P_LIKELY, maybe = p != null && p >= P_MAYBE && p < P_LIKELY, dry = p != null && p < P_MAYBE;
     let pose;
     if (!sw) pose = 'nodata';
     else if (sw.level === 'gust') pose = 'gust';
@@ -642,7 +651,7 @@ const Core = (() => {
 
   return { Z, TS, lonLatToPx, kmPerPx, estimateMotion, fracInDisk, radarProb, nearestRain, bearingDeg, dirName,
     hourIndexFor, ensembleFrac, steeringFromWind, radarWeight, blend, verdict, fmtLead,
-    windLevel, surfaceWind, rainApproach, motionAgreement, windStory, windSlotStory, applyReport };
+    windLevel, surfaceWind, rainApproach, motionAgreement, windStory, windSlotStory, applyReport, P_MAYBE, P_LIKELY, P_SURE };
 })();
 if (typeof module !== 'undefined') module.exports = Core;
 
@@ -688,15 +697,17 @@ if (typeof window !== 'undefined') (() => {
   /* poses: index 0 of each mood is the overview look; the rest show up when an hour is tapped */
   const POSES = {
     dry: [{ id: 'sun', cap: 'ฟ้าเปิด ออกไปได้' }, { id: 'shades', cap: 'ยืนสูดลมสบาย ๆ' }, { id: 'nap', cap: 'งีบรอฝนก่อน' }, { id: 'pant', cap: 'แดดร้อน แลบลิ้นแป๊บ' }],
-    maybe: [{ id: 'cloud', cap: 'ลุ้นหน่อย พกร่มไว้' }, { id: 'sniff', cap: 'ฟุดฟิด ได้กลิ่นฝน' }, { id: 'tilt', cap: 'ฝนจะมาไหมน้า' }],
-    wet: [{ id: 'lotus', cap: 'ได้กลิ่นฝนชัดเลย เย้!' }, { id: 'wet', cap: 'เงยหน้ารับฝน' }, { id: 'catch', cap: 'สะบัดขน ซ่า!' }, { id: 'shake', cap: 'เดินเล่นกลางฝน' }, { id: 'leafhide', cap: 'แอบดูฝนใต้ใบบอน' }],
+    maybe: [{ id: 'tilt', cap: 'ฝนจะมาไหมน้า' }, { id: 'sniff', cap: 'ฟุดฟิด กลิ่นฝนจาง ๆ' }],
+    soon: [{ id: 'alert', cap: 'หูตั้ง ได้กลิ่นฝนแล้ว' }, { id: 'umbrelladay', cap: 'กางร่มรอเลย' }],
+    wet: [{ id: 'lotus', cap: 'กระโดดเล่นน้ำ เย้!' }, { id: 'wet', cap: 'เงยหน้ารับฝน' }, { id: 'catch', cap: 'สะบัดขน ซ่า!' }, { id: 'shake', cap: 'เดินเล่นกลางฝน' }, { id: 'leafhide', cap: 'แอบดูฝนใต้ใบบอน' }],
     nodata: [{ id: 'nodata', cap: 'งง… ยังไม่มีข้อมูล' }],
     idle: [{ id: 'idle', cap: 'กำลังดมกลิ่นฝน…' }]
   };
   // 18:00–06:00
   const NPOSES = {
     dry: [{ id: 'moon', cap: 'หลับปุ๋ย ฟ้าใส' }, { id: 'nightcap', cap: 'ห่มผ้าหลับสบาย' }, { id: 'pillow', cap: 'นอนหนุนหมอนฝันดี' }],
-    maybe: [{ id: 'peekeye', cap: 'แอบลืมตาดูเมฆ' }, { id: 'pillowcloud', cap: 'หลับสบายในคืนเมฆครึ้ม' }],
+    maybe: [{ id: 'pillowcloud', cap: 'หลับไป ลุ้นไป' }, { id: 'peekeye', cap: 'แอบลืมตาดูเมฆ' }],
+    soon: [{ id: 'peekeye', cap: 'ลืมตารอ ฝนใกล้แล้ว' }, { id: 'umbrelladay', cap: 'กางร่มรอฝน' }],
     wet: [{ id: 'blanket', cap: 'ห่มผ้า หลับฟังเสียงฝน' }, { id: 'blanketpaw', cap: 'กางร่มนั่งฟังฝน' }, { id: 'leafhide', cap: 'แอบดูฝนใต้ใบบอน' }, { id: 'rainup', cap: 'ตื่นมาดูฝน' }],
     nodata: [{ id: 'nodata', cap: 'งง… ยังไม่มีข้อมูล' }],
     idle: [{ id: 'sniff', cap: 'กำลังดมกลิ่นฝน…' }]
@@ -730,7 +741,7 @@ if (typeof window !== 'undefined') (() => {
   ];
   const CHAIYEN_POSE_INDEX = {
     sun:0, shades:1, nap:2, pant:3,
-    cloud:12, sniff:5, tilt:6,
+    cloud:12, sniff:5, tilt:6, alert:12, umbrelladay:19,
     lotus:7, wet:8, catch:9, shake:10, puddle:11, idle:12,
     moon:13, nightcap:14, pillow:15, peekeye:16, pillowcloud:17,
     blanket:14, blanketpaw:19, yawn:18,
@@ -738,7 +749,7 @@ if (typeof window !== 'undefined') (() => {
   };
   const CHAIYEN_POSE_ANIM = {
     sun:'happy', shades:'happy', nap:'nap', pant:'pant',
-    cloud:'curious', sniff:'sniff', tilt:'curious',
+    cloud:'curious', sniff:'sniff', tilt:'curious', alert:'curious', umbrelladay:'umbrella',
     lotus:'jump', wet:'rain', catch:'catch', shake:'shake', puddle:'jump', idle:'curious',
     moon:'nap', nightcap:'dream', pillow:'nap', peekeye:'peek', pillowcloud:'dream',
     blanket:'nap', blanketpaw:'umbrella', yawn:'curious',
@@ -751,6 +762,7 @@ if (typeof window !== 'undefined') (() => {
     return CHAIYEN_POSE_INDEX[pose] ?? 1;
   }
   function iconSVG(kind, night) {
+    if (kind === 'soon') kind = 'wet';
     if (night && kind === 'dry') return `<svg class="ic" viewBox="0 0 32 32"><path d="M18 6 a10 10 0 1 0 8 15 a8 8 0 1 1 -8 -15 Z" style="fill:#f2c94c"/><circle cx="25" cy="8" r="1.6" style="fill:#f2c94c"/><circle cx="8" cy="9" r="1.2" style="fill:#f2c94c"/></svg>`;
     if (night && kind === 'maybe') return `<svg class="ic" viewBox="0 0 32 32"><path d="M20 4 a7 7 0 1 0 6 10 a5.6 5.6 0 1 1 -6 -10 Z" style="fill:#f2c94c"/><path d="M7 25a6 6 0 0 1 1-12 8 8 0 0 1 14 2 5 5 0 0 1 0 10Z" style="fill:var(--lo)"/></svg>`;
     if (kind === 'wet') return `<svg class="ic" viewBox="0 0 32 32"><path d="M9 17a6 6 0 0 1 1-12 8 8 0 0 1 14 2 5 5 0 0 1 0 10Z" style="fill:var(--lo)"/><path d="M11 21l-2 5M17 21l-2 5M23 21l-2 5" stroke="var(--rain)" stroke-width="2.6" stroke-linecap="round"/></svg>`;
@@ -942,7 +954,7 @@ if (typeof window !== 'undefined') (() => {
   }
 
   /* ---------- render ---------- */
-  const level = p => (p >= 0.6 ? 'wet' : p >= 0.3 ? 'maybe' : 'dry');
+  const level = p => (p >= Core.P_SURE ? 'wet' : p >= Core.P_LIKELY ? 'soon' : p >= Core.P_MAYBE ? 'maybe' : 'dry');
   function renderHours(slots) {
     const box = $('hours'); box.replaceChildren(); state.hours = [];
     for (let h = 0; h < 4; h++) {
@@ -958,7 +970,7 @@ if (typeof window !== 'undefined') (() => {
       box.appendChild(d);
     }
   }
-  const HOUR_TEXT = { nodata: 'ยังไม่มีข้อมูล', dry: 'ชั่วโมงนี้แห้ง', maybe: 'ชั่วโมงนี้มีลุ้น', wet: 'ชั่วโมงนี้ฝนมา' };
+  const HOUR_TEXT = { nodata: 'ยังไม่มีข้อมูล', dry: 'ชั่วโมงนี้ฝนไม่น่ามา', maybe: 'ชั่วโมงนี้มีลุ้น', soon: 'ชั่วโมงนี้ฝนน่าจะมา', wet: 'ชั่วโมงนี้ฝนมาแน่' };
   function markChips() { document.querySelectorAll('#hours .hour').forEach((b, i) => b.setAttribute('aria-pressed', state.sel === i ? 'true' : 'false')); }
   function showHour(h) {
     const H = state.hours[h]; if (!H) return;
@@ -990,7 +1002,7 @@ if (typeof window !== 'undefined') (() => {
     const strip = $('strip'), ticks = $('ticks'); strip.replaceChildren(); ticks.replaceChildren();
     slots.forEach((s, k) => {
       const b = document.createElement('div'), p = s.p == null ? 0 : s.p;
-      b.className = 'bar ' + (p >= 0.6 ? '' : p >= 0.3 ? 'mid' : 'lo');
+      b.className = 'bar ' + (p >= Core.P_LIKELY ? '' : p >= Core.P_MAYBE ? 'mid' : 'lo');
       b.style.height = Math.max(4, p * 100) + '%';
       b.title = `${s.label} · ${s.p == null ? 'ไม่มีข้อมูล' : Math.round(p * 100) + '%'}` +
         (s.radar != null ? ` · เรดาร์ ${Math.round(s.radar * 100)}%` : '') + (s.model != null ? ` · แบบจำลอง ${Math.round(s.model * 100)}%` : '');
@@ -999,7 +1011,9 @@ if (typeof window !== 'undefined') (() => {
     });
   }
   function renderVerdict(slots, rainingNow, updatedText) {
-    state.overview = { v: Core.verdict(slots, rainingNow), rainingNow };
+    const R = state.radar, ap = R && R.approach;
+    const radarClear = !!(R && state.frames.some(f => f.mask) && (!ap || ap.state === 'none' || ap.distKm > 60));
+    state.overview = { v: Core.verdict(slots, rainingNow, radarClear), rainingNow };
     $('updated').textContent = updatedText;
   }
   function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
@@ -1162,8 +1176,8 @@ if (typeof window !== 'undefined') (() => {
   }
 
   /* ---------- save image ---------- */
-  const CARD_BG = { dry: ['#ffe9a8', '#fff7e0'], maybe: ['#ffd9bd', '#fff1e4'], wet: ['#bfe0ff', '#eaf5ff'], idle: ['#dfe6ee', '#f4f7fa'] };
-  const LV_COLOR = { dry: '#4f9a5a', maybe: '#e07b39', wet: '#3b82c4' };
+  const CARD_BG = { dry: ['#ffe9a8', '#fff7e0'], maybe: ['#ffd9bd', '#fff1e4'], soon: ['#cfe3fb', '#eef5fd'], wet: ['#bfe0ff', '#eaf5ff'], idle: ['#dfe6ee', '#f4f7fa'] };
+  const LV_COLOR = { dry: '#4f9a5a', maybe: '#e07b39', soon: '#3b82c4', wet: '#3b82c4' };
   function rr(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
   function wrapLines(g, text, maxW) {
     const seg = typeof Intl !== 'undefined' && Intl.Segmenter ? [...new Intl.Segmenter('th', { granularity: 'word' }).segment(text)].map(x => x.segment) : [...text];
