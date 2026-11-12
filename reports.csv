@@ -6,3 +6,4 @@ issue,at,observed,intensity,p_latest,p_1to2h_ahead,radar_wet_pm10min,app_p_now,a
 5,2026-11-11T08:26:21.758Z,rain,moderate,0.894,,0,4,dry
 6,2026-11-11T08:30:53.967Z,rain,heavy,0.027,,1,16,dry
 7,2026-11-11T08:56:54.459Z,dry,,0.608,,1,99,rain
+8,2026-11-12T05:29:25.136Z,dry,,0.922,,1,100,rain
