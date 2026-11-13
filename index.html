@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <!-- version: bump both lines on every release; the page compares its own number with the one on the server -->
-<meta name="app-version" content="2.1.1">
-<meta name="app-notes" content="ป้ายสรุปสีชัดขึ้น · คำอธิบายลมอ่านง่ายขึ้น · เว้นขอบบนบนมือถือเพิ่ม">
+<meta name="app-version" content="2.2.0">
+<meta name="app-notes" content="เพิ่มท้องฟ้าเล็ก ๆ ด้านบน เปลี่ยนตามอากาศ">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ฝนจะตกไหมชาเย็น</title>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -394,6 +394,12 @@ button.hour[aria-pressed="true"]{background:var(--tint);box-shadow:inset 0 0 0 2
 /* ---- phone: more room under the status bar, and a solid strip so scrolled content never shows through it ---- */
 .wrap{padding-top:calc(env(safe-area-inset-top, 0px) + 44px)}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top, 0px);background:var(--bg);z-index:25}
+/* ---- little sky above the title; follows the weather ---- */
+.wrap{position:relative;padding-top:calc(env(safe-area-inset-top, 0px) + 100px)}
+.sky{position:absolute;top:calc(env(safe-area-inset-top, 0px) + 2px);left:0;width:100%;height:auto;max-height:120px;pointer-events:none}
+.sky g[class^="s-"]{display:none}
+body:not([data-sky]) .sky .s-dry,body[data-sky="dry"] .sky .s-dry,body[data-sky="maybe"] .sky .s-maybe,body[data-sky="wet"] .sky .s-wet,body[data-sky="night"] .sky .s-night,body[data-sky="nightwet"] .sky .s-nightwet{display:block}
+.top{position:relative}
 /* ---- update popup + version ---- */
 .update{position:fixed;inset:0;z-index:30;display:grid;place-items:end center;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));background:rgba(20,28,40,.35)}
 .updbox{width:100%;max-width:420px;background:var(--surface);border-radius:26px;padding:20px 18px 16px;box-shadow:0 12px 40px rgba(0,0,0,.25);text-align:center;display:flex;flex-direction:column;gap:6px}
@@ -410,6 +416,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
   <filter id="wobble"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="3"/><feDisplacementMap in="SourceGraphic" scale="3.2"/></filter>
 </svg>
 <div class="wrap">
+  <svg class="sky" viewBox="0 0 400 110" aria-hidden="true"><g class="s-dry"><circle cx="338" cy="46" r="20" fill="#ffd45e"/><g stroke="#ffd45e" stroke-width="3.5" stroke-linecap="round"><path d="M338 14v-7M366 24l5-5M376 46h7M310 24l-5-5"/></g><path transform="translate(292 44) scale(1)" d="M10 30a14 14 0 0 1 3-27 19 19 0 0 1 36 4 12 12 0 0 1 2 23Z" fill="#fff" opacity="1"/><path transform="translate(190 18) scale(0.62)" d="M10 30a14 14 0 0 1 3-27 19 19 0 0 1 36 4 12 12 0 0 1 2 23Z" fill="#fff" opacity="0.9"/><path transform="translate(34 34) scale(0.55)" d="M10 30a14 14 0 0 1 3-27 19 19 0 0 1 36 4 12 12 0 0 1 2 23Z" fill="#fff" opacity="0.8"/></g><g class="s-maybe"><circle cx="338" cy="46" r="20" fill="#ffd45e"/><g stroke="#ffd45e" stroke-width="3.5" stroke-linecap="round"><path d="M338 14v-7M366 24l5-5M376 46h7M310 24l-5-5"/></g><path transform="translate(276 34) scale(1.35)" d="M10 30a14 14 0 0 1 3-27 19 19 0 0 1 36 4 12 12 0 0 1 2 23Z" fill="#fff" opacity="1"/><path transform="translate(170 20) scale(0.8)" d="M10 30a14 14 0 0 1 3-27 19 19 0 0 1 36 4 12 12 0 0 1 2 23Z" fill="#e9eef5" opacity="1"/><path transform="translate(30 36) scale(0.6)" d="M10 30a14 14 0 0 1 3-27 19 19 0 0 1 36 4 12 12 0 0 1 2 23Z" fill="#fff" opacity="0.85"/></g><g class="s-wet"><path transform="translate(268 22) scale(1.4)" d="M10 30a14 14 0 0 1 3-27 19 19 0 0 1 36 4 12 12 0 0 1 2 23Z" fill="#c3cedd" opacity="1"/><path transform="translate(150 14) scale(1)" d="M10 30a14 14 0 0 1 3-27 19 19 0 0 1 36 4 12 12 0 0 1 2 23Z" fill="#d5dde8" opacity="1"/><path transform="translate(28 30) scale(0.75)" d="M10 30a14 14 0 0 1 3-27 19 19 0 0 1 36 4 12 12 0 0 1 2 23Z" fill="#dfe5ee" opacity="1"/><g stroke="#5aa2e8" stroke-width="3" stroke-linecap="round"><path d="M292 78l-4 10M312 78l-4 10M332 78l-4 10M172 56l-3 8M190 56l-3 8M48 66l-3 7"/></g></g><g class="s-night"><path d="M342 20a22 22 0 1 0 18 34 18 18 0 1 1-18-34Z" fill="#f2c94c"/><g fill="#f2c94c"><circle cx="286" cy="30" r="2.2"/><circle cx="232" cy="58" r="1.6"/><circle cx="170" cy="24" r="2"/><circle cx="96" cy="50" r="1.6"/><circle cx="40" cy="22" r="2"/></g></g><g class="s-nightwet"><path d="M342 16a20 20 0 1 0 16 31 16 16 0 1 1-16-31Z" fill="#f2c94c"/><path transform="translate(262 34) scale(1.3)" d="M10 30a14 14 0 0 1 3-27 19 19 0 0 1 36 4 12 12 0 0 1 2 23Z" fill="#aab6cc" opacity="1"/><path transform="translate(140 18) scale(0.9)" d="M10 30a14 14 0 0 1 3-27 19 19 0 0 1 36 4 12 12 0 0 1 2 23Z" fill="#bcc6d8" opacity="1"/><g stroke="#7fb4ee" stroke-width="3" stroke-linecap="round"><path d="M284 86l-4 10M304 86l-4 10M324 86l-4 10M160 56l-3 8M178 56l-3 8"/></g><g fill="#f2c94c"><circle cx="60" cy="30" r="2"/><circle cx="100" cy="60" r="1.6"/></g></g></svg>
   <div class="top">
     <div>
       <h1>ฝนจะตกไหม<span>ชาเย็น</span></h1>
@@ -904,6 +911,7 @@ if (typeof window !== 'undefined') (() => {
     $('mood').textContent = cap || (now ? (night ? 'ฟังเสียงฝน หลับสบาย' : 'เปียกแล้ว สนุกจัง') : (night ? NPOSES[m] || NPOSES.idle : POSES[m] || POSES.idle)[0].cap);
     document.querySelector('.hero').classList.toggle('night', night);
     document.querySelector('.hero').dataset.mood = m;
+    { const rainy = m === 'wet' || m === 'soon'; document.body.dataset.sky = night ? (rainy ? 'nightwet' : 'night') : rainy ? 'wet' : m === 'maybe' ? 'maybe' : 'dry'; }
     $('hicon').innerHTML = iconSVG(m === 'idle' || m === 'nodata' ? 'maybe' : m, night);
   }
   setMood('idle', false, 0, null, isNight(Date.now() / 1000));
