@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <!-- version: bump both lines on every release; the page compares its own number with the one on the server -->
-<meta name="app-version" content="2.0.0">
-<meta name="app-notes" content="หน้าตาใหม่ · ตัวเลขอ่านง่ายขึ้น · รูปแชร์แบบใหม่">
+<meta name="app-version" content="2.1.1">
+<meta name="app-notes" content="ป้ายสรุปสีชัดขึ้น · คำอธิบายลมอ่านง่ายขึ้น · เว้นขอบบนบนมือถือเพิ่ม">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ฝนจะตกไหมชาเย็น</title>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -381,6 +381,19 @@ button.hour[aria-pressed="true"]{background:var(--tint);box-shadow:inset 0 0 0 2
 .rbtn{font-family:"Mitr",var(--display);font-weight:500}
 @media (prefers-color-scheme:dark){.hour.dry,.hour.maybe,.hour.soon,.hour.wet{--tint:var(--surface2)} .hour.dry .p{color:#8fd49a}
   .stat.dry{--pill:#22382a;--pillfg:#8fd49a} .stat.maybe,.stat.wind{--pill:#3f2f1f;--pillfg:#ffb876} .stat.soon,.stat.wet{--pill:#1f3350;--pillfg:#9cc8ff} .stat{--pill:#232d3a}}
+/* ---- headline label: solid colour by weather + a small tag ---- */
+.hero{--tone:#8a96a8;--tonefg:#4d5870}
+.hero[data-mood="dry"]{--tone:#4f9a5a;--tonefg:#2f7a3c} .hero[data-mood="maybe"]{--tone:#e58a2e;--tonefg:#b8600f} .hero[data-mood="soon"],.hero[data-mood="wet"]{--tone:#3b82c4;--tonefg:#2468a8}
+.headline{position:relative;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;margin-top:10px;padding:14px 16px 12px;border-radius:22px;
+  background:var(--tone);box-shadow:0 4px 14px color-mix(in srgb,var(--tone) 35%,transparent)}
+.headline .answer{margin:0;color:#fff;font:600 1.32rem/1.3 var(--num);text-wrap:balance}
+.htag{position:absolute;top:-12px;left:18px;background:#fff;color:var(--tonefg);font:500 .74rem var(--num);padding:2px 11px;border-radius:99px;box-shadow:0 1px 5px rgba(30,50,80,.18)}
+.hicon{flex:none;display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:#fff} .hicon .ic{width:30px;height:30px}
+.hero.night .headline{background:#4a5a92;box-shadow:none} .hero.night .htag{color:#34437c}
+.cap{display:block}
+/* ---- phone: more room under the status bar, and a solid strip so scrolled content never shows through it ---- */
+.wrap{padding-top:calc(env(safe-area-inset-top, 0px) + 44px)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top, 0px);background:var(--bg);z-index:25}
 /* ---- update popup + version ---- */
 .update{position:fixed;inset:0;z-index:30;display:grid;place-items:end center;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));background:rgba(20,28,40,.35)}
 .updbox{width:100%;max-width:420px;background:var(--surface);border-radius:26px;padding:20px 18px 16px;box-shadow:0 12px 40px rgba(0,0,0,.25);text-align:center;display:flex;flex-direction:column;gap:6px}
@@ -413,7 +426,7 @@ button.hour[aria-pressed="true"]{background:var(--tint);box-shadow:inset 0 0 0 2
   </div>
 
   <div class="card hero" aria-live="polite">
-    <p class="answer" id="verdict">กำลังดูฝน…</p>
+    <div class="headline"><span class="htag" id="htag">สรุปตอนนี้</span><span class="hicon" id="hicon"></span><p class="answer" id="verdict">กำลังดูฝน…</p></div>
     <div class="duo">
       <section class="friend" aria-label="ชาเย็น ดมกลิ่นฝน">
         <span class="mood idle" id="mood">กำลังดมกลิ่นฝน…</span>
@@ -707,7 +720,7 @@ const Core = (() => {
       else if (ap.state === 'still') parts.push(`${where} ขยับช้า ยังบอกทิศไม่ได้`);
       else parts.push('เรดาร์รอบสวนโล่ง');
     }
-    if (sw && sw.gust != null && sw.gust >= sw.speed + 10 && sw.gust >= 25) parts.push(`กระโชกถึง ${Math.round(sw.gust)}`);
+    if (sw && sw.gust != null && sw.gust >= sw.speed + 10 && sw.gust >= 25) parts.push(`บางจังหวะลมแรงถึง ${Math.round(sw.gust)}`);
     if (agree && !agree.ok) parts.push('ทิศฝนไม่ตรงกับลม');
     return { pose, mood: WIND_MOOD[pose], cap: WIND_CAP[pose], head, sub: parts.join(' · '), from: sw ? sw.from : null };
   }
@@ -744,7 +757,7 @@ const Core = (() => {
     else pose = sw.level === 'light' ? 'pinwheel' : 'calm';
     const head = !sw ? 'ยังไม่มีข้อมูลลม' : sw.level === 'calm' ? 'ลมสงบ' : `ลม${sw.from == null ? '' : dirName(sw.from)} ${Math.round(sw.speed)} กม./ชม.`;
     const parts = [];
-    if (sw && sw.gust != null && sw.gust >= sw.speed + 10 && sw.gust >= 25) parts.push(`กระโชกถึง ${Math.round(sw.gust)}`);
+    if (sw && sw.gust != null && sw.gust >= sw.speed + 10 && sw.gust >= 25) parts.push(`บางจังหวะลมแรงถึง ${Math.round(sw.gust)}`);
     if (sw && swNow) { const d = sw.speed - swNow.speed; parts.unshift(d >= 5 ? 'แรงขึ้นกว่าตอนนี้' : d <= -5 ? 'เบาลงกว่าตอนนี้' : 'ลมพอ ๆ กับตอนนี้'); }
     return { pose, mood: WIND_MOOD[pose], cap: WIND_CAP[pose], head, sub: parts.join(' · '), from: sw ? sw.from : null };
   }
@@ -891,6 +904,7 @@ if (typeof window !== 'undefined') (() => {
     $('mood').textContent = cap || (now ? (night ? 'ฟังเสียงฝน หลับสบาย' : 'เปียกแล้ว สนุกจัง') : (night ? NPOSES[m] || NPOSES.idle : POSES[m] || POSES.idle)[0].cap);
     document.querySelector('.hero').classList.toggle('night', night);
     document.querySelector('.hero').dataset.mood = m;
+    $('hicon').innerHTML = iconSVG(m === 'idle' || m === 'nodata' ? 'maybe' : m, night);
   }
   setMood('idle', false, 0, null, isNight(Date.now() / 1000));
 
@@ -918,7 +932,7 @@ if (typeof window !== 'undefined') (() => {
   const ARROW = deg => `<svg class="warrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(${deg}deg)" aria-hidden="true"><path d="M12 20V5M6 11l6-6 6 6"/></svg>`;
   // 18:00–06:00 the wind friend is in bed: same story, night picture and caption
   const NIGHT_WIND = { calm: ['n_sleep', 'หลับปุ๋ย ลมนิ่ง'], light: ['n_zz', 'ห่มผ้าฟังลมเบา ๆ'], pinwheel: ['n_zz', 'ห่มผ้าฟังลมเบา ๆ'],
-    strong: ['n_wrap', 'ลมแรง ห่มผ้าแน่น ๆ'], gust: ['n_wrap', 'ลมกระโชก ห่มผ้าแน่น ๆ'], approach: ['n_rain', 'ตื่นมาเงยหน้าดูฟ้า'], run: ['n_rain', 'ตื่นมาเงยหน้าดูฟ้า'],
+    strong: ['n_wrap', 'ลมแรง ห่มผ้าแน่น ๆ'], gust: ['n_wrap', 'ลมแรงมาก ห่มผ้าแน่น ๆ'], approach: ['n_rain', 'ตื่นมาเงยหน้าดูฟ้า'], run: ['n_rain', 'ตื่นมาเงยหน้าดูฟ้า'],
     sniff: ['n_rain', 'ลืมตาสูดลมแป๊บ'], leave: ['n_sleep', 'ฝนผ่านไป หลับต่อ'], away: ['n_sleep', 'ฝนไม่กวน หลับต่อ'] };
   function dressWind(st, night) { const n = st && night && NIGHT_WIND[st.pose]; return n ? { ...st, pose: n[0], cap: n[1] } : st; }
   function setWind(st) {
@@ -930,14 +944,14 @@ if (typeof window !== 'undefined') (() => {
     { const wm = st && /^(ลม\S*) (\d+) กม\.\/ชม\.$/.exec(st.head);
       $('whead').innerHTML = wm ? `<span class="stat wind">${st.from != null ? ARROW(Math.round((st.from + 180) % 360)) : ''}<b>${wm[2]}</b><i>กม./ชม.</i></span><span class="cap">${wm[1]}</span>`
         : `<span class="stat wind calm"><b>${st ? st.head : ''}</b></span>`; }
-    $('wsub').textContent = st ? st.sub : '';
+    $('wsub').replaceChildren(...(st && st.sub ? st.sub.split(' · ') : []).map(t => Object.assign(document.createElement('span'), { className: 'cap', textContent: t })));
   }
   function renderWind() {
     const sw = Core.surfaceWind(state.models && state.models.wind, state.models ? state.models.now : Date.now() / 1000), R = state.radar;
     state.windStory = Core.windStory(sw, R ? R.approach : (DEMO ? (DEMO_APPROACH[DEMO] || DEMO_APPROACH.maybe) : null), state.rainNow != null ? state.rainNow : !!(R && R.rainingNow), R ? R.agree : null,
       R && Math.hypot(R.vx, R.vy) * KMPX * 60 >= 3 ? { to: Core.bearingDeg(R.vx, R.vy) } : null);
     if (state.rainNow && !(R && R.rainingNow) && state.applied) { // rain known only from the farm report: radar motion says nothing about it
-      const gust = (state.windStory.sub.match(/กระโชกถึง \d+/) || [])[0];
+      const gust = (state.windStory.sub.match(/บางจังหวะลมแรงถึง \d+/) || [])[0];
       state.windStory = { ...state.windStory, sub: ['เรดาร์ยังไม่เห็นฝนนี้', gust].filter(Boolean).join(' · ') };
     }
     state.windStory = dressWind(state.windStory, isNight(Date.now() / 1000));
@@ -1087,8 +1101,8 @@ if (typeof window !== 'undefined') (() => {
     state.factText = text || ''; const el = $('verdictSub'), m = /(\d+)%/.exec(text || '');
     if (!m) { el.textContent = text || ''; return; }
     const p = +m[1] / 100, peak = /ช่วง (\d\d:\d\d)/.exec(text), range = /^(\d\d:\d\d)–(\d\d:\d\d)/.exec(text);
-    const cap = range ? `${range[1]}–${range[2]}` + (peak ? ` · มากสุด ${peak[1]}` : '') : /ยังไม่แน่/.test(text) ? 'โอกาสฝน · ยังไม่แน่' : 'โอกาสฝน' + (peak ? ` · มากสุด ${peak[1]}` : '');
-    el.innerHTML = `<span class="stat ${level(p)}"><b>${m[1]}</b><i>%</i></span><span class="cap">${cap}</span>`;
+    const cap2 = /ยังไม่แน่/.test(text) ? 'ยังไม่แน่' : peak ? `มากสุด ${peak[1]}` : '';
+    el.innerHTML = `<span class="stat ${level(p)}"><b>${m[1]}</b><i>%</i></span><span class="cap">โอกาสฝน</span>` + (cap2 ? `<span class="cap">${cap2}</span>` : '');
   }
   function markChips() { document.querySelectorAll('#hours .hour').forEach((b, i) => b.setAttribute('aria-pressed', state.sel === i ? 'true' : 'false')); }
   function showHour(h) {
@@ -1100,7 +1114,7 @@ if (typeof window !== 'undefined') (() => {
     const mid = H.q[0].tSec + 1800, wsw = Core.surfaceWind(state.models && state.models.wind, mid);
     state.windStory = dressWind(Core.windSlotStory(wsw, H.p, state.radar ? state.radar.approach : null, h === 0, state.surfaceWind), night); setWind(state.windStory);
     $('verdict').textContent = HOUR_TEXT[lvm];
-    setFact(`${H.label}–${H.end} · โอกาสสูงสุด ${H.p == null ? '–' : Math.round(H.p * 100) + '% ช่วง ' + H.peak}`);
+    setFact(H.p == null ? '' : `${H.label}–${H.end} · โอกาสสูงสุด ${Math.round(H.p * 100)}% ช่วง ${H.peak}`); $('htag').textContent = `${H.label}–${H.end}`;
     const qb = $('quarters'); qb.replaceChildren();
     for (const s of H.q) { const el = document.createElement('div'); const lv = s.p == null ? 'dry' : level(s.p);
       el.className = 'q ' + lv; el.innerHTML = `<span>${s.label}</span><b>${s.p == null ? '–' : Math.round(s.p * 100) + '%'}</b>`; qb.appendChild(el); }
@@ -1110,7 +1124,7 @@ if (typeof window !== 'undefined') (() => {
   function showOverview() {
     state.sel = null; markChips();
     const O = state.overview; if (!O) return;
-    $('verdict').textContent = O.v.text; setFact(O.v.sub);
+    $('verdict').textContent = O.v.text; setFact(O.v.sub); $('htag').textContent = 'สรุปตอนนี้';
     const night = isNight(Date.now() / 1000);
     setMood(O.v.cls || 'nodata', O.rainingNow, 0, null, night);
     state.windStory = state.windNow; setWind(state.windNow);
@@ -1321,8 +1335,21 @@ if (typeof window !== 'undefined') (() => {
     g.fillText(now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }), W2 - 100, 130);
     g.font = `400 26px ${F}`; g.fillStyle = '#66727f'; g.fillText(now.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }), W2 - 100, 172);
     // headline
-    g.textAlign = 'center'; g.font = `600 58px ${N}`; g.fillStyle = '#1d2733';
-    let y = 270; for (const ln of wrapLines(g, S.text || '', 900).slice(0, 2)) { g.fillText(ln, W2 / 2, y); y += 70; }
+    const TONE = { dry: ['#4f9a5a', '#2f7a3c'], maybe: ['#e58a2e', '#b8600f'], soon: ['#3b82c4', '#2468a8'], wet: ['#3b82c4', '#2468a8'] };
+    const tone = S.night ? ['#4a5a92', '#34437c'] : (TONE[S.mood] || ['#8a96a8', '#4d5870']);
+    g.textAlign = 'center'; g.font = `600 52px ${N}`;
+    const hl = wrapLines(g, S.text || '', 700).slice(0, 2), hh0 = 60 + hl.length * 64, hy = 226;
+    g.fillStyle = tone[0]; rr(g, 100, hy, 880, hh0, 50); g.fill();
+    const icoKind = S.mood === 'idle' || S.mood === 'nodata' ? 'maybe' : S.mood;
+    const ico = await loadImg('data:image/svg+xml,' + encodeURIComponent(iconSVG(icoKind, !!S.night).replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" ').replace(/var\(--lo\)/g, '#c9d3e0').replace(/var\(--rain\)/g, '#3b82c4')), false).catch(() => null);
+    const tw0 = Math.max(...hl.map(l => g.measureText(l).width)), bx = W2 / 2 - (tw0 + 104) / 2;
+    g.fillStyle = '#fff'; g.beginPath(); g.arc(bx + 42, hy + hh0 / 2, 42, 0, Math.PI * 2); g.fill();
+    if (ico) g.drawImage(ico, bx + 12, hy + hh0 / 2 - 30, 60, 60);
+    g.fillStyle = '#fff'; g.textAlign = 'left'; hl.forEach((ln, i) => g.fillText(ln, bx + 104, hy + 30 + 46 + i * 64));
+    const tagTxt = $('htag').textContent; g.font = `500 26px ${N}`; const tgw = g.measureText(tagTxt).width + 44;
+    g.fillStyle = '#fff'; g.shadowColor = 'rgba(30,50,80,.2)'; g.shadowBlur = 10; g.shadowOffsetY = 2; rr(g, 132, hy - 24, tgw, 46, 23); g.fill(); g.shadowColor = 'transparent'; g.shadowBlur = 0; g.shadowOffsetY = 0;
+    g.fillStyle = tone[1]; g.fillText(tagTxt, 154, hy + 9); g.textAlign = 'center';
+    let y = hy + hh0 + 70;
     // two friends
     const top = y - 30, colW = 430, cols = [100, 550];
     const dogA = await loadImg(CHAIYEN_STICKERS[chaiyenStickerIndex(S.mood, S.pose || 0, !!S.night)], false);
@@ -1332,7 +1359,7 @@ if (typeof window !== 'undefined') (() => {
     const friends = [
       { name: 'ชาเย็น', role: 'ดูฝน', img: dogA, tag: S.tag, pal: PASTEL[S.mood] || PASTEL.idle,
         num: pm ? pm[1] : null, unit: '%', numPal: pm ? PASTEL[level(+pm[1] / 100)] : null,
-        caps: pm ? [range ? `${range[1]}–${range[2]}` + (peak ? ` · มากสุด ${peak[1]}` : '') : /ยังไม่แน่/.test(S.sub) ? 'โอกาสฝน · ยังไม่แน่' : 'โอกาสฝน' + (peak ? ` · มากสุด ${peak[1]}` : '')] : [S.sub || ''] },
+        caps: pm ? ['โอกาสฝน', /ยังไม่แน่/.test(S.sub) ? 'ยังไม่แน่' : peak ? `มากสุด ${peak[1]}` : ''].filter(Boolean) : [S.sub || ''] },
       { name: 'ชานม', role: 'ดูลม', img: dogB, tag: WS ? WS.cap : 'ลมยังอ่านไม่ออก', pal: PASTEL[WS ? WS.mood : 'idle'] || PASTEL.idle,
         num: wm ? wm[2] : null, unit: 'กม./ชม.', numPal: ['#fff0e2', '#b8600f'], arrow: wm && WS.from != null ? (WS.from + 180) % 360 : null,
         word: wm ? null : (WS ? WS.head : ''), caps: [wm ? wm[1] : '', ...(WS && WS.sub ? WS.sub.split(' · ') : [])].filter(Boolean) }
