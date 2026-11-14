@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <!-- version: bump both lines on every release; the page compares its own number with the one on the server -->
-<meta name="app-version" content="2.3.0">
-<meta name="app-notes" content="ดูว่าก้อนฝนโตหรือเล็กลง · แต่งแผนที่ฝนและส่วนดูละเอียดใหม่">
+<meta name="app-version" content="2.3.1">
+<meta name="app-notes" content="แผนที่ฝนเปิดมาที่ภาพตอนนี้ · เปลี่ยนชื่อเป็น ดูรายละเอียด">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ฝนจะตกไหมชาเย็น</title>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -515,11 +515,11 @@ summary .chev{color:var(--muted);background:var(--surface2);border-radius:50%;pa
   <div class="card mapcard">
     <div class="hhead maphead"><h2>แผนที่ฝนรอบสวน</h2>
       <div class="seg two" role="group" aria-label="เลือกชั้นข้อมูล" id="modeSeg">
-        <button type="button" data-mode="past" aria-pressed="true">ที่ตกไปแล้ว</button>
-        <button type="button" data-mode="now">ตอนนี้</button>
+        <button type="button" data-mode="now" aria-pressed="true">ตอนนี้</button>
+        <button type="button" data-mode="past" aria-pressed="false">ที่ตกไปแล้ว</button>
       </div>
     </div>
-    <div class="pastsum" id="pastSum">
+    <div class="pastsum" id="pastSum" hidden>
       <div class="big" id="pAtFarm">–</div>
       <div id="pAround" class="sub"></div>
     </div>
@@ -531,14 +531,14 @@ summary .chev{color:var(--muted);background:var(--surface2);border-radius:50%;pa
         <button type="button" data-crop="300">ไกล</button>
       </div>
     </div>
-    <div class="scrub" id="scrubRow" hidden><input id="frame" type="range" min="0" max="0" value="0" aria-label="เลือกเวลาภาพเรดาร์"><span id="frameTime">–</span></div>
-    <div class="key" id="pastKey">
+    <div class="scrub" id="scrubRow"><input id="frame" type="range" min="0" max="0" value="0" aria-label="เลือกเวลาภาพเรดาร์"><span id="frameTime">–</span></div>
+    <div class="key" id="pastKey" hidden>
       <span><i style="background:var(--acc1)"></i>10–20 นาที</span><span><i style="background:var(--acc2)"></i>30–50 นาที</span><span><i style="background:var(--acc3)"></i>1 ชม. ขึ้นไป</span>
     </div>
   </div>
 
   <details class="card" id="details">
-    <summary>ดูละเอียด <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <summary>ดูรายละเอียด <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></summary>
     <div class="detail-body">
       <div class="stripbox">
     <h3>โอกาสฝนทุก 15 นาที</h3>
@@ -1221,7 +1221,7 @@ if (typeof window !== 'undefined') (() => {
     $('updated').textContent = updatedText;
   }
   function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
-  let CROP = 180, MODE = 'past', accCanvas = null, accCount = null;
+  let CROP = 180, MODE = 'now', accCanvas = null, accCount = null;
   // o: { crop, mode, frame, base, bg, muted, tea, labels }
   function paintRadar(g, S, o) {
     const k = S / 320, crop = o.crop;
