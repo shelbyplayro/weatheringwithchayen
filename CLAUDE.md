@@ -3,7 +3,8 @@
 เว็บแอปหน้าเดียว พยากรณ์ฝน 0–4 ชม. ที่สวนยาง/ปาล์ม อ.คีรีรัฐนิคม จ.สุราษฎร์ธานี (พิกัดตั้งต้น 9.032759575862215, 98.94431140668654)
 - เว็บ: https://shelbyplayro.github.io/weatheringwithchayen/ (GitHub Pages จาก repo `shelbyplayro/weatheringwithchayen`, branch หลัก)
 - ผู้ใช้คุยภาษาไทย ตอบภาษาไทย ใช้คำง่าย ไม่ใช้ศัพท์เทคนิคบนหน้าจอ
-- เวอร์ชันปัจจุบัน: **2.3.0**
+- เวอร์ชันปัจจุบัน: **2.4.0**
+- ตั้งแต่ 2026-11-14 โฟลเดอร์นี้เป็น git repo ผูกกับ `origin/main` ส่งงานด้วย `git push` ได้เลย (อย่า push branch `data` ที่ workflow เขียน)
 
 ## ไฟล์
 - `index.html` (~1.6 MB) ทั้งแอปอยู่ไฟล์เดียว รูปสติกเกอร์ฝังเป็น data URI (webp) **อย่าเปิดอ่านทั้งไฟล์** ใช้ grep/sed เฉพาะช่วง
@@ -12,7 +13,7 @@
 - ไอคอน/manifest ยังเป็นชาเย็นเวกเตอร์รุ่นแรก
 
 ## โครงสร้างใน index.html
-- `Core` (ฟังก์ชันล้วน): `estimateMotion`, `radarProb`, `rainTrend`, `growthFactor`, `rainApproach`, `motionAgreement`, `blend`, `verdict`, `windStory`, `windSlotStory`, `applyReport`, ค่า `P_MAYBE 0.3 / P_LIKELY 0.6 / P_SURE 0.8`
+- `Core` (ฟังก์ชันล้วน): `estimateMotion`, `radarProb`, `rainTrend`, `growthFactor`, `rainApproach`, `motionAgreement`, `blend`, `popupCells`, `airReady`, `popupProb`, `addPopup` (ฝนก่อตัวเอง, แอปใช้ ส่วน logger เก็บแยกใน popup.csv), `verdict`, `windStory`, `windSlotStory`, `applyReport`, ค่า `P_MAYBE 0.3 / P_LIKELY 0.6 / P_SURE 0.8`
 - `App`: `analyseRadar`, `buildSlots`, `recompute`, `renderVerdict/renderWind/renderHours/renderStrip`, `showOverview/showHour`, `setMood` (ชาเย็น), `setWind` (ชานม), `makeCard` (รูปแชร์ canvas 1080px), `report` (เปิดหน้า New issue), `checkUpdate`
 - สติกเกอร์: `CHAIYEN_STICKERS` (array, index ผ่าน `CHAIYEN_POSE_INDEX`), หนังสือท่า `POSES` (กลางวัน) / `NPOSES` (กลางคืน), `CHAONM_STICKERS` (object ตามชื่อท่า), `NIGHT_WIND`
 - แหล่งข้อมูล: RainViewer (เรดาร์ z7 ทุก 10 นาที), Open-Meteo forecast + ensemble
@@ -35,14 +36,15 @@
 ## งานค้าง (เรียงตามที่คุยไว้)
 1. **รูปคู่ในรูปแชร์** รอผู้ใช้ส่ง 6–9 รูป (ชาเย็นซ้าย ชานมขวา แนวนอน ~2:1): ฝนไม่มาลมเบา, ฝนไม่มาลมแรง, มีลุ้น, ฝนกำลังมา, ฝนตกที่สวน, ฝนตกลมแรงมาก, คืนฝนไม่มา, คืนมีลุ้น/ฝนกำลังมา, คืนฝนตก (+ งงทั้งคู่, หน้าคู่สำหรับไอคอน) ยังไม่มีรูปไหนให้ใช้รูปเดี่ยวสองตัวเหมือนเดิม
 2. **การ์ด "คืนนี้กรีดยางได้ไหม"** ต้องถามผู้ใช้: เวลาเริ่มกรีด เวลาเก็บน้ำยาง และฝนหยุดแล้วรอกี่ชั่วโมงหน้ายางถึงแห้ง
-3. **จูนจาก verify.json / reports.csv / wind.csv / trend.csv** เมื่อมีข้อมูล ~2 สัปดาห์: calibration ของ %, น้ำหนักเรดาร์กับแบบจำลอง, ตัวคูณ growth, ค่า floor ใน `REPORT_FLOOR`
+3. **จูนจาก verify.json / reports.csv / wind.csv / trend.csv** เมื่อมีข้อมูล ~2 สัปดาห์: calibration ของ %, น้ำหนักเรดาร์กับแบบจำลอง, ตัวคูณ growth, ค่า floor ใน `REPORT_FLOOR`, สูตร `popupProb` และเกณฑ์ CAPE ใน `airReady` (popup.csv)
 4. เรดาร์: คิดทิศแยกแต่ละก้อน, นับฝนในรัศมี 3–5 กม. แทนจุดเดียว
 5. แจ้งเตือนเข้ามือถือผ่าน GitHub Actions (ยังไม่ได้เลือกช่องทาง)
 6. ไอคอนแอปชุดใหม่ตามลายเส้นปัจจุบัน, ทำใหม่ 3 ท่าชาเย็นที่สีเข้ม (`leafhide`, `rainup`, `nodata`), ไล่เช็คโหมดมืดหลังเปลี่ยนหน้าตา
 7. ให้ทุกเครื่องเห็นรายงานล่าสุดตรงกัน (อ่านจาก GitHub issues) ถ้าผู้ใช้ต้องการ
-8. ผู้ใช้เคยแจ้งว่าอัปโหลดขึ้น GitHub ไม่ได้ช่วงหนึ่ง ยังไม่ทราบสาเหตุ ถ้า Claude Code push ได้เองปัญหานี้หมดไป
+8. ~~อัปโหลดขึ้น GitHub ไม่ได้~~ แก้แล้ว: Claude Code push เองได้ (2026-11-14)
 
 ## ข้อควรรู้
 - RainViewer แบบฟรี (ตั้งแต่ 1 ม.ค. 2026): ซูมสูงสุด 7, ย้อนหลัง 2 ชม., ไม่มีภาพพยากรณ์
 - Open-Meteo ราย 15 นาทีนอกอเมริกาเหนือ/ยุโรปกลางเป็นค่าเฉลี่ยจากรายชั่วโมง ไม่ช่วย
-- ตัวคูณ growth, ค่า REPORT_FLOOR และเกณฑ์ลม เป็นค่าที่ตั้งเอง ยังไม่ได้จูนจากข้อมูลจริง
+- ตัวคูณ growth, ค่า REPORT_FLOOR, เกณฑ์ลม และสูตรฝนก่อตัวเอง เป็นค่าที่ตั้งเอง ยังไม่ได้จูนจากข้อมูลจริง
+- Open-Meteo ให้ `cape`, `lifted_index`, `temperature_2m`, `dew_point_2m` ที่พิกัดสวนได้ (เช็คแล้ว 2026-11-14)

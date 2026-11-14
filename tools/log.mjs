@@ -59,7 +59,8 @@ async function loadModels(now) {
   const ens = await Promise.allSettled(ENS_MODELS.map(m => getJSON(`${OME}?${q}&hourly=precipitation&models=${m}`).then(j => ({ m, j }))));
   const det = await Promise.allSettled(DET_MODELS.map(m => getJSON(`${OM}?${q}&hourly=precipitation,precipitation_probability&models=${m}`).then(j => ({ m, j }))));
   const wind = await getJSON(`${OM}?latitude=${LAT}&longitude=${LON}&hourly=wind_speed_700hPa,wind_direction_700hPa,wind_speed_10m,wind_direction_10m,wind_gusts_10m&forecast_hours=3&timeformat=unixtime`).catch(() => null);
-  return { now, ens: ens.filter(r => r.status === 'fulfilled').map(r => r.value), det: det.filter(r => r.status === 'fulfilled').map(r => r.value), wind };
+  const air = await getJSON(`${OM}?latitude=${LAT}&longitude=${LON}&hourly=cape,lifted_index,temperature_2m,dew_point_2m&forecast_hours=3&timeformat=unixtime`).catch(() => null);
+  return { now, ens: ens.filter(r => r.status === 'fulfilled').map(r => r.value), det: det.filter(r => r.status === 'fulfilled').map(r => r.value), wind, air };
 }
 // same weighting as the page
 function modelProbAt(models, tSec) {
@@ -100,8 +101,8 @@ function analyseRadar(ok, models) {
   const agree = source === 'radar' && steer ? Core.motionAgreement(vx, vy, steer.vx, steer.vy) : null;
   if (conf < 0.25 && steer) { vx = steer.vx; vy = steer.vy; conf = 0.3; source = 'wind'; }
   const near = Core.nearestRain(last.mask, W, H, px, py);
-  const trend = Core.rainTrend(ok, W, H, px, py, vx, vy);
-  return { last, vx, vy, conf, source, steer, agree, near, trend, approach: Core.rainApproach(near, vx, vy, conf, LAT) };
+  const trend = Core.rainTrend(ok, W, H, px, py, vx, vy), popup = Core.popupCells(ok, W, H, px, py, vx, vy, Core.kmPerPx(LAT));
+  return { last, vx, vy, conf, source, steer, agree, near, trend, popup, approach: Core.rainApproach(near, vx, vy, conf, LAT) };
 }
 
 /* ---------- csv helpers ---------- */
@@ -233,6 +234,15 @@ export async function run() {
   //     the app applies Core.growthFactor(growth_per_min, lead). Logged apart so the factor can be tested against what happened.
   appendCSV(path.join(DATA, 'trend.csv'), ['at', 'growth_per_min', 'state', 'frames'], [{
     at: iso(now), growth_per_min: radar && radar.trend ? r3(radar.trend.g) : '', state: radar && radar.trend ? radar.trend.state : '', frames: radar && radar.trend ? radar.trend.n : '' }]);
+
+  // 1d. pop-up showers (rain forming on its own within 40 km) and how ready the air is. The app adds Core.popupProb to p;
+  //     forecasts.csv does not. p_popup_60 = what the app added for the slot ~1 h ahead.
+  const pop = radar ? radar.popup : null, air = models ? Core.airReady(models.air, now) : null;
+  appendCSV(path.join(DATA, 'popup.csv'), ['at', 'cells', 'new_frac', 'nearest_km', 'cape', 'lifted_index', 'temp_c', 'dew_c', 'ready', 'p_popup_60'], [{
+    at: iso(now), cells: pop ? pop.cells : '', new_frac: pop ? r3(pop.frac) : '', nearest_km: pop && pop.nearestKm != null ? r3(pop.nearestKm) : '',
+    cape: air && air.cape != null ? Math.round(air.cape) : '', lifted_index: air && air.li != null ? r3(air.li) : '',
+    temp_c: air && air.temp != null ? r3(air.temp) : '', dew_c: air && air.dew != null ? r3(air.dew) : '', ready: air ? air.level : '',
+    p_popup_60: pop ? r3(Core.popupProb(pop, 60, air)) : '' }]);
 
   // 2. observations (one row per radar frame, no duplicates)
   const obsFile = path.join(DATA, 'observed.csv');

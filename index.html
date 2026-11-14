@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <!-- version: bump both lines on every release; the page compares its own number with the one on the server -->
-<meta name="app-version" content="2.3.1">
-<meta name="app-notes" content="แผนที่ฝนเปิดมาที่ภาพตอนนี้ · เปลี่ยนชื่อเป็น ดูรายละเอียด">
+<meta name="app-version" content="2.4.0">
+<meta name="app-notes" content="ดูฝนที่ก่อตัวขึ้นเองรอบสวน และอากาศอบอ้าวพร้อมก่อฝนไหม · แผนที่ฝนเปิดมาที่ภาพตอนนี้">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ฝนจะตกไหมชาเย็น</title>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -552,6 +552,8 @@ summary .chev{color:var(--muted);background:var(--surface2);border-radius:50%;pa
         <div><dt>ฝนเคลื่อนไปทาง</dt><dd id="rMove">–</dd></div>
         <div><dt>ฝนกับสวน</dt><dd id="rAppr">–</dd></div>
         <div><dt>ก้อนฝนโตหรือเล็กลง</dt><dd id="rGrow">–</dd></div>
+        <div><dt>ฝนก่อตัวขึ้นเองรอบสวน</dt><dd id="rPop">–</dd></div>
+        <div><dt>อากาศพร้อมก่อฝนไหม</dt><dd id="rAir">–</dd></div>
         <div><dt>ทิศฝนตรงกับลมไหม</dt><dd id="rAgree">–</dd></div>
         <div><dt>ลมที่สวน</dt><dd id="rWind">–</dd></div>
         <div><dt>ภาพล่าสุด</dt><dd id="rAge">–</dd></div>
@@ -656,6 +658,73 @@ const Core = (() => {
     const den = pts.reduce((a, p) => a + (p.t - mt) ** 2, 0); if (!den) return null;
     const g = Math.max(-0.025, Math.min(0.025, pts.reduce((a, p, i) => a + (p.t - mt) * (ys[i] - my), 0) / den));
     return { g, state: g > 0.008 ? 'grow' : g < -0.008 ? 'decay' : 'steady', n: pts.length };
+  }
+  // Rain that formed on its own (pop-up showers): rain in a recent frame where the frame ~20 min earlier, moved along with the rain,
+  // had nothing within ~4 km. Looks within 40 km of the farm. frames: [{ mask, time }] oldest first, kmpx: km per radar pixel.
+  // Returns { cells, frac (share of the 40 km disk newly wet per 20 min), nearestKm, bearing, n } or null when there are too few frames.
+  function popupCells(frames, w, h, px, py, vx, vy, kmpx) {
+    if (!frames || frames.length < 3) return null;
+    const R = 40 / kmpx, D = Math.max(2, Math.round(4 / kmpx)), minPx = Math.max(3, Math.round(6 / (kmpx * kmpx))), n = frames.length, pairs = [];
+    for (const [ia, ib] of [[n - 3, n - 1], [n - 4, n - 2]]) {
+      const A = frames[ia], B = frames[ib]; if (!A || !B) continue;
+      const dt = (B.time - A.time) / 60; if (dt < 15 || dt > 30) continue;
+      const ox = vx * dt, oy = vy * dt, fresh = new Set(); let area = 0;
+      for (let j = Math.max(0, Math.ceil(py - R)); j <= Math.min(h - 1, Math.floor(py + R)); j++)
+        for (let i = Math.max(0, Math.ceil(px - R)); i <= Math.min(w - 1, Math.floor(px + R)); i++) {
+          if ((i - px) ** 2 + (j - py) ** 2 > R * R) continue; area++;
+          if (!B.mask[j * w + i]) continue;
+          const sx = Math.round(i - ox), sy = Math.round(j - oy); let seen = false;
+          for (let dy = -D; dy <= D && !seen; dy++) for (let dx = -D; dx <= D; dx++) {
+            const x = sx + dx, y = sy + dy;
+            if (dx * dx + dy * dy > D * D || x < 0 || y < 0 || x >= w || y >= h) continue;
+            if (A.mask[y * w + x]) { seen = true; break; }
+          }
+          if (!seen) fresh.add(j * w + i);
+        }
+      const done = new Set(), blobs = [];
+      for (const k0 of fresh) {
+        if (done.has(k0)) continue;
+        const st = [k0]; done.add(k0); let size = 0, sx = 0, sy = 0;
+        while (st.length) {
+          const k = st.pop(), x = k % w, y = (k - x) / w; size++; sx += x; sy += y;
+          for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+            const q = (y + dy) * w + x + dx; if ((dx || dy) && fresh.has(q) && !done.has(q)) { done.add(q); st.push(q); }
+          }
+        }
+        if (size >= minPx) blobs.push({ size, x: sx / size, y: sy / size });
+      }
+      pairs.push({ cells: blobs.length, frac: area ? blobs.reduce((a, b) => a + b.size, 0) / area * (20 / dt) : 0, blobs });
+    }
+    if (!pairs.length) return null;
+    const near = pairs[0].blobs.reduce((m, b) => { const d = Math.hypot(b.x - px, b.y - py); return !m || d < m.d ? { d, b } : m; }, null);
+    return { cells: pairs[0].cells, frac: pairs.reduce((a, p) => a + p.frac, 0) / pairs.length,
+      nearestKm: near ? near.d * kmpx : null, bearing: near ? bearingDeg(near.b.x - px, near.b.y - py) : null, n: pairs.length };
+  }
+  // Is the air ready to build showers? Model CAPE (energy for rising air, J/kg) and lifted index (more negative = less stable) for the hour nearest nowSec.
+  // mult scales the pop-up chance. Returns { cape, li, temp, dew, level: 'low' | 'mid' | 'high', mult } or null.
+  function airReady(air, nowSec) {
+    const h = air && air.hourly; if (!h || !h.time) return null;
+    let bi = -1, bd = Infinity; h.time.forEach((t, i) => { const d = Math.abs(t - nowSec); if (d < bd) { bd = d; bi = i; } });
+    const v = k => (h[k] && h[k][bi] != null ? h[k][bi] : null);
+    const cape = v('cape'), li = v('lifted_index');
+    if (cape == null && li == null) return null;
+    let mult = cape == null ? 1 : cape < 250 ? 0.4 : cape < 800 ? 0.8 : cape < 1500 ? 1 : cape < 2500 ? 1.2 : 1.35;
+    if (li != null && li <= -4) mult += 0.1;
+    return { cape, li, temp: v('temperature_2m'), dew: v('dew_point_2m'), level: mult >= 1.15 ? 'high' : mult >= 0.8 ? 'mid' : 'low', mult };
+  }
+  // Chance that a shower forms over the farm itself in a slot t min ahead, from how many pop-ups appeared nearby lately.
+  // Starts low (radar already covers "now"), full from 20 to 90 min, gone by 3 h. Hand-set numbers: check against popup.csv before tuning.
+  function popupProb(pop, tMin, ready) {
+    if (!pop || !pop.cells) return 0;
+    const ramp = tMin < 20 ? (Math.max(0, tMin) + 5) / 25 : tMin <= 90 ? 1 : Math.max(0, 1 - (tMin - 90) / 90);
+    return Math.min(0.45, (pop.frac * 2.5 + 0.03 * Math.min(pop.cells, 5)) * (ready ? ready.mult : 1)) * ramp;
+  }
+  // App only (the logger keeps p without it, like the growth factor): p' = 1 − (1 − p)(1 − p_popup)
+  function addPopup(slots, pop, ready) {
+    return slots.map(s => {
+      const pp = popupProb(pop, s.t, ready);
+      return s.p == null || pp < 0.005 ? s : { ...s, p: 1 - (1 - s.p) * (1 - pp), popup: pp };
+    });
   }
 
   function nearestRain(M, w, h, px, py, maxR = 380) {
@@ -766,7 +835,7 @@ const Core = (() => {
     approach: 'ลมพาฝนมา', leave: 'ฝนผ่านไปแล้ว โล่งใจ', away: 'ฝนไม่มาทางนี้', unsure: 'ลมยังอ่านไม่ออก',
     run: 'วิ่งเข้าร่มเร็ว!', sniff: 'สูดลมดูก่อน', pinwheel: 'กังหันหมุนเพลิน', shelter: 'หลบฝนใต้ใบไม้', nodata: 'งง… ไม่มีข้อมูลลม' };
   const WIND_MOOD = { calm: 'dry', light: 'dry', strong: 'maybe', gust: 'maybe', approach: 'wet', leave: 'dry', away: 'dry', unsure: 'idle', run: 'wet', sniff: 'maybe', pinwheel: 'dry', shelter: 'wet', nodata: 'idle' };
-  function windStory(sw, ap, rainingNow, agree, mv, trend) { // mv = { to: bearing the rain moves toward } or null
+  function windStory(sw, ap, rainingNow, agree, mv, trend, pop) { // mv = { to: bearing the rain moves toward } or null; pop = popupCells() or null
     let pose;
     if (!sw && !ap) pose = 'nodata';
     else if (rainingNow) pose = 'shelter';
@@ -789,6 +858,7 @@ const Core = (() => {
       else parts.push('เรดาร์รอบสวนโล่ง');
     }
     if (trend && trend.state !== 'steady' && (rainingNow || (ap && ap.state === 'approach'))) parts.push(trend.state === 'grow' ? 'ก้อนฝนกำลังใหญ่ขึ้น' : 'ก้อนฝนกำลังเล็กลง');
+    if (!rainingNow && pop && pop.cells && pop.nearestKm != null && pop.nearestKm <= 30) parts.push(pop.cells >= 2 ? 'ฝนก่อตัวขึ้นเองหลายก้อนแถวนี้' : 'มีฝนก่อตัวขึ้นเองแถวนี้');
     if (sw && sw.gust != null && sw.gust >= sw.speed + 10 && sw.gust >= 25) parts.push(`บางจังหวะลมแรงถึง ${Math.round(sw.gust)}`);
     if (agree && !agree.ok) parts.push('ทิศฝนไม่ตรงกับลม');
     return { pose, mood: WIND_MOOD[pose], cap: WIND_CAP[pose], head, sub: parts.join(' · '), from: sw ? sw.from : null };
@@ -833,7 +903,7 @@ const Core = (() => {
 
   return { Z, TS, lonLatToPx, kmPerPx, estimateMotion, fracInDisk, radarProb, nearestRain, bearingDeg, dirName,
     hourIndexFor, ensembleFrac, steeringFromWind, radarWeight, blend, verdict, fmtLead,
-    windLevel, surfaceWind, rainApproach, motionAgreement, windStory, windSlotStory, applyReport, rainTrend, growthFactor, P_MAYBE, P_LIKELY, P_SURE };
+    windLevel, surfaceWind, rainApproach, motionAgreement, windStory, windSlotStory, applyReport, rainTrend, growthFactor, popupCells, airReady, popupProb, addPopup, P_MAYBE, P_LIKELY, P_SURE };
 })();
 if (typeof module !== 'undefined') module.exports = Core;
 
@@ -1019,7 +1089,7 @@ if (typeof window !== 'undefined') (() => {
   function renderWind() {
     const sw = Core.surfaceWind(state.models && state.models.wind, state.models ? state.models.now : Date.now() / 1000), R = state.radar;
     state.windStory = Core.windStory(sw, R ? R.approach : (DEMO ? (DEMO_APPROACH[DEMO] || DEMO_APPROACH.maybe) : null), state.rainNow != null ? state.rainNow : !!(R && R.rainingNow), R ? R.agree : null,
-      R && Math.hypot(R.vx, R.vy) * KMPX * 60 >= 3 ? { to: Core.bearingDeg(R.vx, R.vy) } : null, R ? R.trend : null);
+      R && Math.hypot(R.vx, R.vy) * KMPX * 60 >= 3 ? { to: Core.bearingDeg(R.vx, R.vy) } : null, R ? R.trend : null, R ? R.popup : null);
     if (state.rainNow && !(R && R.rainingNow) && state.applied) { // rain known only from the farm report: radar motion says nothing about it
       const gust = (state.windStory.sub.match(/บางจังหวะลมแรงถึง \d+/) || [])[0];
       state.windStory = { ...state.windStory, sub: ['เรดาร์ยังไม่เห็นฝนนี้', gust].filter(Boolean).join(' · ') };
@@ -1087,7 +1157,8 @@ if (typeof window !== 'undefined') (() => {
     const det = await Promise.allSettled(DET_MODELS.map(([m, name]) =>
       getJSON(`${OM}?latitude=${LAT}&longitude=${LON}&hourly=precipitation,precipitation_probability&models=${m}&forecast_hours=7&past_hours=1&timeformat=unixtime`).then(j => ({ m, name, j }))));
     const wind = await getJSON(`${OM}?latitude=${LAT}&longitude=${LON}&hourly=wind_speed_700hPa,wind_direction_700hPa,wind_speed_10m,wind_direction_10m,wind_gusts_10m&forecast_hours=5&timeformat=unixtime`).catch(() => null);
-    return { now, ens: ens.filter(r => r.status === 'fulfilled').map(r => r.value), det: det.filter(r => r.status === 'fulfilled').map(r => r.value), wind };
+    const air = await getJSON(`${OM}?latitude=${LAT}&longitude=${LON}&hourly=cape,lifted_index,temperature_2m,dew_point_2m&forecast_hours=5&timeformat=unixtime`).catch(() => null);
+    return { now, ens: ens.filter(r => r.status === 'fulfilled').map(r => r.value), det: det.filter(r => r.status === 'fulfilled').map(r => r.value), wind, air };
   }
   function modelProbAt(models, tSec) {
     const parts = [];
@@ -1133,8 +1204,8 @@ if (typeof window !== 'undefined') (() => {
     if (conf < 0.25 && steer) { vx = steer.vx; vy = steer.vy; conf = 0.3; source = 'wind'; }
     const atPoint = Core.fracInDisk(last.mask, W, H, px, py, 1.5);
     const near = Core.nearestRain(last.mask, W, H, px, py);
-    const trend = Core.rainTrend(ok, W, H, px, py, vx, vy);
-    return { last, vx, vy, conf, source, rainingNow: atPoint != null && atPoint >= 0.5, near, agree, trend, approach: Core.rainApproach(near, vx, vy, conf, LAT) };
+    const trend = Core.rainTrend(ok, W, H, px, py, vx, vy), popup = Core.popupCells(ok, W, H, px, py, vx, vy, KMPX);
+    return { last, vx, vy, conf, source, rainingNow: atPoint != null && atPoint >= 0.5, near, agree, trend, popup, approach: Core.rainApproach(near, vx, vy, conf, LAT) };
   }
   function buildSlots(models, radar) {
     const now = Date.now() / 1000, start = Math.ceil(now / 900) * 900;
@@ -1146,7 +1217,7 @@ if (typeof window !== 'undefined') (() => {
       const m = models ? modelProbAt(models, tSec) : null;
       slots.push({ t: Math.max(0, t), tSec, label: fmtTime(tSec), radar: r, model: m });
     }
-    return Core.blend(slots);
+    return Core.addPopup(Core.blend(slots), radar && radar.popup, models ? Core.airReady(models.air, now) : null);
   }
 
   /* ---------- render ---------- */
@@ -1209,7 +1280,7 @@ if (typeof window !== 'undefined') (() => {
       b.className = 'bar ' + (p >= Core.P_LIKELY ? '' : p >= Core.P_MAYBE ? 'mid' : 'lo');
       b.style.height = Math.max(4, p * 100) + '%';
       b.title = `${s.label} · ${s.p == null ? 'ไม่มีข้อมูล' : Math.round(p * 100) + '%'}` +
-        (s.radar != null ? ` · เรดาร์ ${Math.round(s.radar * 100)}%` : '') + (s.model != null ? ` · แบบจำลอง ${Math.round(s.model * 100)}%` : '');
+        (s.radar != null ? ` · เรดาร์ ${Math.round(s.radar * 100)}%` : '') + (s.model != null ? ` · แบบจำลอง ${Math.round(s.model * 100)}%` : '') + (s.popup ? ` · ฝนก่อตัวเอง +${Math.round(s.popup * 100)}%` : '');
       strip.appendChild(b);
       if (k % 4 === 0) { const tk = document.createElement('span'); tk.textContent = s.label; ticks.appendChild(tk); }
     });
@@ -1263,10 +1334,12 @@ if (typeof window !== 'undefined') (() => {
   function renderWindRow() {
     const sw = state.surfaceWind;
     $('rWind').textContent = sw ? `${sw.level === 'calm' ? 'สงบ' : 'จาก' + Core.dirName(sw.from)} ${Math.round(sw.speed)} กม./ชม.` + (sw.gust != null ? ` · แรงสุด ${Math.round(sw.gust)}` : '') : 'ไม่มีข้อมูล';
+    const a = state.models ? Core.airReady(state.models.air, Date.now() / 1000) : null;
+    $('rAir').textContent = a ? { low: 'น้อย', mid: 'ปานกลาง', high: 'มาก อากาศอบอ้าว' }[a.level] + (a.temp != null ? ` · ${Math.round(a.temp)}°` : '') + (a.temp != null && a.dew != null && a.temp - a.dew <= 4 ? ' ชื้นมาก' : '') : (DEMO ? 'ตัวอย่าง' : 'ไม่มีข้อมูล');
   }
   function renderRadarStats(R) {
     if (!R) {
-      ['rNow','rNear','rMove','rAppr','rGrow','rAgree'].forEach(id => $(id).textContent = DEMO ? 'ตัวอย่าง' : 'วิเคราะห์ไม่ได้'); renderWindRow();
+      ['rNow','rNear','rMove','rAppr','rGrow','rPop','rAgree'].forEach(id => $(id).textContent = DEMO ? 'ตัวอย่าง' : 'วิเคราะห์ไม่ได้'); renderWindRow();
       $('rAge').textContent = state.frames.length ? fmtTime(state.frames[state.frames.length - 1].time) : '–'; return;
     }
     $('rNow').textContent = R.rainingNow ? 'มีฝน' : 'ไม่มีฝน';
@@ -1284,6 +1357,9 @@ if (typeof window !== 'undefined') (() => {
     } else $('rAppr').textContent = '–';
     $('rAge').textContent = `${fmtTime(R.last.time)} (${Math.round((Date.now() / 1000 - R.last.time) / 60)} นาทีก่อน)`;
     $('rGrow').textContent = R.trend ? { grow: 'กำลังใหญ่ขึ้น', decay: 'กำลังเล็กลง', steady: 'พอ ๆ เดิม' }[R.trend.state] : 'ฝนน้อยเกินจะบอกได้';
+    const pp = R.popup, pAdd = state.rawSlots ? Math.max(0, ...state.rawSlots.map(s => s.popup || 0)) : 0;
+    $('rPop').textContent = !pp ? 'ภาพเรดาร์ไม่พอจะดู' : !pp.cells ? 'ไม่มีใน 20 นาทีที่ผ่านมา'
+      : `${pp.cells} ก้อนใน 20 นาที ใกล้สุด ${Math.round(pp.nearestKm)} กม. ทาง${Core.dirName(pp.bearing)}` + (pAdd >= 0.01 ? ` · เพิ่มโอกาสฝนสูงสุด ${Math.round(pAdd * 100)}%` : '');
     $('rAgree').textContent = R.agree ? (R.agree.ok ? 'ตรงกัน' : `ไม่ตรง (ต่าง ${R.agree.angle}°)`) : (R.source === 'wind' ? 'ดูจากลมบนแทน' : 'ประเมินไม่ได้'); renderWindRow();
   }
   function buildPast() {
