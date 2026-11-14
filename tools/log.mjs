@@ -100,7 +100,8 @@ function analyseRadar(ok, models) {
   const agree = source === 'radar' && steer ? Core.motionAgreement(vx, vy, steer.vx, steer.vy) : null;
   if (conf < 0.25 && steer) { vx = steer.vx; vy = steer.vy; conf = 0.3; source = 'wind'; }
   const near = Core.nearestRain(last.mask, W, H, px, py);
-  return { last, vx, vy, conf, source, steer, agree, near, approach: Core.rainApproach(near, vx, vy, conf, LAT) };
+  const trend = Core.rainTrend(ok, W, H, px, py, vx, vy);
+  return { last, vx, vy, conf, source, steer, agree, near, trend, approach: Core.rainApproach(near, vx, vy, conf, LAT) };
 }
 
 /* ---------- csv helpers ---------- */
@@ -227,6 +228,11 @@ export async function run() {
     agree_angle: radar && radar.agree ? radar.agree.angle : '', agree_ratio: radar && radar.agree ? r3(radar.agree.ratio) : '',
     approach: ap ? ap.state : '', rain_km: ap && ap.distKm != null ? r3(ap.distKm) : '', rain_bearing: ap && ap.bearing != null ? Math.round(ap.bearing) : '', eta_min: ap && ap.etaMin != null ? ap.etaMin : ''
   }]);
+
+  // 1c. rain growth trend. forecasts.csv keeps p_radar WITHOUT the growth factor (same meaning as before);
+  //     the app applies Core.growthFactor(growth_per_min, lead). Logged apart so the factor can be tested against what happened.
+  appendCSV(path.join(DATA, 'trend.csv'), ['at', 'growth_per_min', 'state', 'frames'], [{
+    at: iso(now), growth_per_min: radar && radar.trend ? r3(radar.trend.g) : '', state: radar && radar.trend ? radar.trend.state : '', frames: radar && radar.trend ? radar.trend.n : '' }]);
 
   // 2. observations (one row per radar frame, no duplicates)
   const obsFile = path.join(DATA, 'observed.csv');

@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <!-- version: bump both lines on every release; the page compares its own number with the one on the server -->
-<meta name="app-version" content="2.2.0">
-<meta name="app-notes" content="เพิ่มท้องฟ้าเล็ก ๆ ด้านบน เปลี่ยนตามอากาศ">
+<meta name="app-version" content="2.3.0">
+<meta name="app-notes" content="ดูว่าก้อนฝนโตหรือเล็กลง · แต่งแผนที่ฝนและส่วนดูละเอียดใหม่">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ฝนจะตกไหมชาเย็น</title>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -400,6 +400,38 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .sky g[class^="s-"]{display:none}
 body:not([data-sky]) .sky .s-dry,body[data-sky="dry"] .sky .s-dry,body[data-sky="maybe"] .sky .s-maybe,body[data-sky="wet"] .sky .s-wet,body[data-sky="night"] .sky .s-night,body[data-sky="nightwet"] .sky .s-nightwet{display:block}
 .top{position:relative}
+/* ---- lower half: map card + details, same soft look as the top ---- */
+.maphead{margin:0 2px 0;align-items:center}
+.seg{border-radius:999px;padding:4px;gap:2px;background:var(--surface2)}
+.seg button{border-radius:999px;font:500 .8rem "Mitr",var(--display);padding:7px 12px;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--tea);color:#fff;box-shadow:none}
+.maphead .seg{flex:none}
+.pastsum{border-radius:20px;padding:12px 16px;background:color-mix(in srgb,var(--rain) 9%,var(--surface));text-align:center;gap:2px}
+.pastsum .big{font:500 1.02rem/1.4 "Mitr",var(--display)}
+.pastsum .sub{font-size:.82rem;color:var(--muted)}
+.pastsum .sub:empty{display:none}
+.mapbox{position:relative}
+.mapbox canvas{display:block;width:100%;height:auto;border-radius:22px}
+.mapbox .seg{position:absolute;right:10px;bottom:10px;background:color-mix(in srgb,var(--surface) 88%,transparent);box-shadow:0 2px 8px rgba(30,50,80,.16);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.mapbox .seg button{padding:5px 11px;font-size:.76rem}
+.scrub input{accent-color:var(--tea)} .scrub span{font:500 .86rem var(--num)}
+.key{justify-content:center;gap:6px 8px}
+.key span{background:var(--surface2);border-radius:999px;padding:4px 10px;font-size:.74rem}
+.key i{border-radius:50%}
+details.card{border-radius:26px}
+summary{padding:16px 18px;font:500 1rem "Mitr",var(--display)}
+summary .chev{color:var(--muted);background:var(--surface2);border-radius:50%;padding:5px;width:28px;height:28px}
+.detail-body{gap:16px}
+.stripbox{background:var(--surface2);border-radius:20px;padding:14px 14px 12px}
+.stripbox h3{font:500 .9rem "Mitr",var(--display)}
+.stripbox .key span{background:var(--surface)}
+.strip .bar{border-radius:8px 8px 4px 4px}
+.ticks{font-family:var(--num)}
+.detail-body dl{display:flex;flex-direction:column;gap:6px;font-size:.86rem}
+.detail-body dl>div{display:flex;justify-content:space-between;align-items:baseline;gap:14px;background:var(--surface2);border-radius:14px;padding:9px 14px}
+.detail-body dd{text-align:right;font-weight:500}
+.tablewrap{border-radius:16px;background:var(--surface2);padding:6px 10px}
+.ver{display:inline-block;margin-bottom:8px;background:var(--surface);border-radius:999px;padding:3px 12px;box-shadow:0 1px 4px rgba(30,50,80,.08)}
 /* ---- update popup + version ---- */
 .update{position:fixed;inset:0;z-index:30;display:grid;place-items:end center;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));background:rgba(20,28,40,.35)}
 .updbox{width:100%;max-width:420px;background:var(--surface);border-radius:26px;padding:20px 18px 16px;box-shadow:0 12px 40px rgba(0,0,0,.25);text-align:center;display:flex;flex-direction:column;gap:6px}
@@ -481,24 +513,27 @@ body:not([data-sky]) .sky .s-dry,body[data-sky="dry"] .sky .s-dry,body[data-sky=
 
 
   <div class="card mapcard">
-    <h2>แผนที่ฝนรอบสวน</h2>
-    <div class="seg two" role="group" aria-label="เลือกชั้นข้อมูล" id="modeSeg">
-      <button type="button" data-mode="past" aria-pressed="true">ที่ตกไปแล้ว</button>
-      <button type="button" data-mode="now">ตอนนี้</button>
-    </div>
-    <canvas id="radar" width="640" height="640" role="img" aria-label="แผนที่เรดาร์ฝนรอบพิกัด"></canvas>
-    <div class="seg" role="group" aria-label="ระยะมองเรดาร์" id="zoomSeg">
-      <button type="button" data-crop="110">ใกล้</button>
-      <button type="button" data-crop="180" aria-pressed="true">กลาง</button>
-      <button type="button" data-crop="300">ไกล</button>
-    </div>
-    <div class="scrub" id="scrubRow" hidden><input id="frame" type="range" min="0" max="0" value="0" aria-label="เลือกเวลาภาพเรดาร์"><span id="frameTime">–</span></div>
-    <div class="key" id="pastKey">
-      <span><i style="background:var(--acc1)"></i>10–20 นาที</span><span><i style="background:var(--acc2)"></i>30–50 นาที</span><span><i style="background:var(--acc3)"></i>1 ชม. ขึ้นไป</span>
+    <div class="hhead maphead"><h2>แผนที่ฝนรอบสวน</h2>
+      <div class="seg two" role="group" aria-label="เลือกชั้นข้อมูล" id="modeSeg">
+        <button type="button" data-mode="past" aria-pressed="true">ที่ตกไปแล้ว</button>
+        <button type="button" data-mode="now">ตอนนี้</button>
+      </div>
     </div>
     <div class="pastsum" id="pastSum">
       <div class="big" id="pAtFarm">–</div>
       <div id="pAround" class="sub"></div>
+    </div>
+    <div class="mapbox">
+      <canvas id="radar" width="640" height="640" role="img" aria-label="แผนที่เรดาร์ฝนรอบพิกัด"></canvas>
+      <div class="seg" role="group" aria-label="ระยะมองเรดาร์" id="zoomSeg">
+        <button type="button" data-crop="110">ใกล้</button>
+        <button type="button" data-crop="180" aria-pressed="true">กลาง</button>
+        <button type="button" data-crop="300">ไกล</button>
+      </div>
+    </div>
+    <div class="scrub" id="scrubRow" hidden><input id="frame" type="range" min="0" max="0" value="0" aria-label="เลือกเวลาภาพเรดาร์"><span id="frameTime">–</span></div>
+    <div class="key" id="pastKey">
+      <span><i style="background:var(--acc1)"></i>10–20 นาที</span><span><i style="background:var(--acc2)"></i>30–50 นาที</span><span><i style="background:var(--acc3)"></i>1 ชม. ขึ้นไป</span>
     </div>
   </div>
 
@@ -512,13 +547,14 @@ body:not([data-sky]) .sky .s-dry,body[data-sky="dry"] .sky .s-dry,body[data-sky=
     <div class="key"><span><i style="background:var(--lo)"></i>ต่ำกว่า 30%</span><span><i style="background:var(--tea)"></i>30–59%</span><span><i style="background:var(--rain)"></i>60% ขึ้นไป</span></div>
   </div>
       <dl>
-        <dt>ฝนที่พิกัดตอนนี้</dt><dd id="rNow">–</dd>
-        <dt>ฝนใกล้สุด</dt><dd id="rNear">–</dd>
-        <dt>ฝนเคลื่อนไปทาง</dt><dd id="rMove">–</dd>
-        <dt>ฝนกับสวน</dt><dd id="rAppr">–</dd>
-        <dt>ทิศฝนตรงกับลมไหม</dt><dd id="rAgree">–</dd>
-        <dt>ลมที่สวน</dt><dd id="rWind">–</dd>
-        <dt>ภาพล่าสุด</dt><dd id="rAge">–</dd>
+        <div><dt>ฝนที่สวนตอนนี้</dt><dd id="rNow">–</dd></div>
+        <div><dt>ฝนใกล้สุด</dt><dd id="rNear">–</dd></div>
+        <div><dt>ฝนเคลื่อนไปทาง</dt><dd id="rMove">–</dd></div>
+        <div><dt>ฝนกับสวน</dt><dd id="rAppr">–</dd></div>
+        <div><dt>ก้อนฝนโตหรือเล็กลง</dt><dd id="rGrow">–</dd></div>
+        <div><dt>ทิศฝนตรงกับลมไหม</dt><dd id="rAgree">–</dd></div>
+        <div><dt>ลมที่สวน</dt><dd id="rWind">–</dd></div>
+        <div><dt>ภาพล่าสุด</dt><dd id="rAge">–</dd></div>
       </dl>
       <div class="tablewrap"><table id="models"></table></div>
     </div>
@@ -590,11 +626,36 @@ const Core = (() => {
   }
 
   // Probability from advecting the latest mask: for lead t (min), sample upstream at p - v*t.
-  function radarProb(M, w, h, px, py, vx, vy, tMin, confidence) {
+  // growth: d ln(rain area)/dt per minute from rainTrend (0 = size unchanged)
+  function radarProb(M, w, h, px, py, vx, vy, tMin, confidence, growth = 0) {
     const spread = 2.5 + tMin / 12 * (1.5 - confidence); // grows with lead time, faster when motion is uncertain
     const f = fracInDisk(M, w, h, px - vx * tMin, py - vy * tMin, spread);
     if (f == null) return null;
-    return Math.min(1, f * 1.15);
+    return Math.min(1, f * 1.15 * growthFactor(growth, tMin));
+  }
+  // A growing patch is more likely to still be raining when it arrives, a fading one less. Damped and clipped: the trend rarely holds for a full hour.
+  function growthFactor(growth, tMin) { return Math.max(0.45, Math.min(1.7, Math.exp((growth || 0) * Math.min(Math.max(tMin, 0), 90) * 0.5))); }
+  // Is the rain upstream of the farm growing or fading? Follows the same patch of air back through the last frames
+  // (disk of ~85 km radius centred 40 min upstream, shifted with the motion) and fits the trend of its rain-covered share.
+  // frames: [{ mask, time }] oldest first. Returns { g (per min), state: 'grow' | 'decay' | 'steady', n } or null when there is too little rain to tell.
+  function rainTrend(frames, w, h, px, py, vx, vy) {
+    if (!frames || frames.length < 3) return null;
+    const last = frames[frames.length - 1], R = 70, sp = Math.hypot(vx, vy), lead = sp > 0 ? Math.min(40, 110 / sp) : 0;
+    const cx = px - vx * lead, cy = py - vy * lead, full = Math.PI * R * R / 4, pts = [];
+    for (const f of frames.slice(-5)) {
+      const age = (last.time - f.time) / 60; if (age < 0 || age > 50) continue;
+      const x0 = cx - vx * age, y0 = cy - vy * age; let n = 0, k = 0;
+      for (let j = Math.floor(y0 - R); j <= y0 + R; j += 2) for (let i = Math.floor(x0 - R); i <= x0 + R; i += 2) {
+        if ((i - x0) ** 2 + (j - y0) ** 2 > R * R || i < 0 || j < 0 || i >= w || j >= h) continue;
+        n++; k += f.mask[j * w + i];
+      }
+      if (n >= full * 0.7) pts.push({ t: -age, f: k / n });
+    }
+    if (pts.length < 3 || Math.max(...pts.map(p => p.f)) < 0.01) return null;
+    const ys = pts.map(p => Math.log(p.f + 0.004)), mt = pts.reduce((a, p) => a + p.t, 0) / pts.length, my = ys.reduce((a, b) => a + b, 0) / ys.length;
+    const den = pts.reduce((a, p) => a + (p.t - mt) ** 2, 0); if (!den) return null;
+    const g = Math.max(-0.025, Math.min(0.025, pts.reduce((a, p, i) => a + (p.t - mt) * (ys[i] - my), 0) / den));
+    return { g, state: g > 0.008 ? 'grow' : g < -0.008 ? 'decay' : 'steady', n: pts.length };
   }
 
   function nearestRain(M, w, h, px, py, maxR = 380) {
@@ -705,7 +766,7 @@ const Core = (() => {
     approach: 'ลมพาฝนมา', leave: 'ฝนผ่านไปแล้ว โล่งใจ', away: 'ฝนไม่มาทางนี้', unsure: 'ลมยังอ่านไม่ออก',
     run: 'วิ่งเข้าร่มเร็ว!', sniff: 'สูดลมดูก่อน', pinwheel: 'กังหันหมุนเพลิน', shelter: 'หลบฝนใต้ใบไม้', nodata: 'งง… ไม่มีข้อมูลลม' };
   const WIND_MOOD = { calm: 'dry', light: 'dry', strong: 'maybe', gust: 'maybe', approach: 'wet', leave: 'dry', away: 'dry', unsure: 'idle', run: 'wet', sniff: 'maybe', pinwheel: 'dry', shelter: 'wet', nodata: 'idle' };
-  function windStory(sw, ap, rainingNow, agree, mv) { // mv = { to: bearing the rain moves toward } or null
+  function windStory(sw, ap, rainingNow, agree, mv, trend) { // mv = { to: bearing the rain moves toward } or null
     let pose;
     if (!sw && !ap) pose = 'nodata';
     else if (rainingNow) pose = 'shelter';
@@ -727,6 +788,7 @@ const Core = (() => {
       else if (ap.state === 'still') parts.push(`${where} ขยับช้า ยังบอกทิศไม่ได้`);
       else parts.push('เรดาร์รอบสวนโล่ง');
     }
+    if (trend && trend.state !== 'steady' && (rainingNow || (ap && ap.state === 'approach'))) parts.push(trend.state === 'grow' ? 'ก้อนฝนกำลังใหญ่ขึ้น' : 'ก้อนฝนกำลังเล็กลง');
     if (sw && sw.gust != null && sw.gust >= sw.speed + 10 && sw.gust >= 25) parts.push(`บางจังหวะลมแรงถึง ${Math.round(sw.gust)}`);
     if (agree && !agree.ok) parts.push('ทิศฝนไม่ตรงกับลม');
     return { pose, mood: WIND_MOOD[pose], cap: WIND_CAP[pose], head, sub: parts.join(' · '), from: sw ? sw.from : null };
@@ -771,7 +833,7 @@ const Core = (() => {
 
   return { Z, TS, lonLatToPx, kmPerPx, estimateMotion, fracInDisk, radarProb, nearestRain, bearingDeg, dirName,
     hourIndexFor, ensembleFrac, steeringFromWind, radarWeight, blend, verdict, fmtLead,
-    windLevel, surfaceWind, rainApproach, motionAgreement, windStory, windSlotStory, applyReport, P_MAYBE, P_LIKELY, P_SURE };
+    windLevel, surfaceWind, rainApproach, motionAgreement, windStory, windSlotStory, applyReport, rainTrend, growthFactor, P_MAYBE, P_LIKELY, P_SURE };
 })();
 if (typeof module !== 'undefined') module.exports = Core;
 
@@ -957,7 +1019,7 @@ if (typeof window !== 'undefined') (() => {
   function renderWind() {
     const sw = Core.surfaceWind(state.models && state.models.wind, state.models ? state.models.now : Date.now() / 1000), R = state.radar;
     state.windStory = Core.windStory(sw, R ? R.approach : (DEMO ? (DEMO_APPROACH[DEMO] || DEMO_APPROACH.maybe) : null), state.rainNow != null ? state.rainNow : !!(R && R.rainingNow), R ? R.agree : null,
-      R && Math.hypot(R.vx, R.vy) * KMPX * 60 >= 3 ? { to: Core.bearingDeg(R.vx, R.vy) } : null);
+      R && Math.hypot(R.vx, R.vy) * KMPX * 60 >= 3 ? { to: Core.bearingDeg(R.vx, R.vy) } : null, R ? R.trend : null);
     if (state.rainNow && !(R && R.rainingNow) && state.applied) { // rain known only from the farm report: radar motion says nothing about it
       const gust = (state.windStory.sub.match(/บางจังหวะลมแรงถึง \d+/) || [])[0];
       state.windStory = { ...state.windStory, sub: ['เรดาร์ยังไม่เห็นฝนนี้', gust].filter(Boolean).join(' · ') };
@@ -1071,7 +1133,8 @@ if (typeof window !== 'undefined') (() => {
     if (conf < 0.25 && steer) { vx = steer.vx; vy = steer.vy; conf = 0.3; source = 'wind'; }
     const atPoint = Core.fracInDisk(last.mask, W, H, px, py, 1.5);
     const near = Core.nearestRain(last.mask, W, H, px, py);
-    return { last, vx, vy, conf, source, rainingNow: atPoint != null && atPoint >= 0.5, near, agree, approach: Core.rainApproach(near, vx, vy, conf, LAT) };
+    const trend = Core.rainTrend(ok, W, H, px, py, vx, vy);
+    return { last, vx, vy, conf, source, rainingNow: atPoint != null && atPoint >= 0.5, near, agree, trend, approach: Core.rainApproach(near, vx, vy, conf, LAT) };
   }
   function buildSlots(models, radar) {
     const now = Date.now() / 1000, start = Math.ceil(now / 900) * 900;
@@ -1079,7 +1142,7 @@ if (typeof window !== 'undefined') (() => {
     for (let k = 0; k < NSLOT; k++) {
       const tSec = start + k * 900, t = Math.round((tSec - now) / 60);
       let r = null;
-      if (radar && t + radarAge < 125) r = Core.radarProb(radar.last.mask, W, H, px, py, radar.vx, radar.vy, t + radarAge, radar.conf);
+      if (radar && t + radarAge < 125) r = Core.radarProb(radar.last.mask, W, H, px, py, radar.vx, radar.vy, t + radarAge, radar.conf, radar.trend ? radar.trend.g : 0);
       const m = models ? modelProbAt(models, tSec) : null;
       slots.push({ t: Math.max(0, t), tSec, label: fmtTime(tSec), radar: r, model: m });
     }
@@ -1199,11 +1262,11 @@ if (typeof window !== 'undefined') (() => {
   }
   function renderWindRow() {
     const sw = state.surfaceWind;
-    $('rWind').textContent = sw ? `${sw.level === 'calm' ? 'สงบ' : 'จาก' + Core.dirName(sw.from)} ${Math.round(sw.speed)} กม./ชม.` + (sw.gust != null ? ` · กระโชก ${Math.round(sw.gust)}` : '') : 'ไม่มีข้อมูล';
+    $('rWind').textContent = sw ? `${sw.level === 'calm' ? 'สงบ' : 'จาก' + Core.dirName(sw.from)} ${Math.round(sw.speed)} กม./ชม.` + (sw.gust != null ? ` · แรงสุด ${Math.round(sw.gust)}` : '') : 'ไม่มีข้อมูล';
   }
   function renderRadarStats(R) {
     if (!R) {
-      ['rNow','rNear','rMove','rAppr','rAgree'].forEach(id => $(id).textContent = DEMO ? 'ตัวอย่าง' : 'วิเคราะห์ไม่ได้'); renderWindRow();
+      ['rNow','rNear','rMove','rAppr','rGrow','rAgree'].forEach(id => $(id).textContent = DEMO ? 'ตัวอย่าง' : 'วิเคราะห์ไม่ได้'); renderWindRow();
       $('rAge').textContent = state.frames.length ? fmtTime(state.frames[state.frames.length - 1].time) : '–'; return;
     }
     $('rNow').textContent = R.rainingNow ? 'มีฝน' : 'ไม่มีฝน';
@@ -1220,6 +1283,7 @@ if (typeof window !== 'undefined') (() => {
         : cos < -0.3 ? 'กำลังออกห่าง' : 'เคลื่อนผ่านด้านข้าง';
     } else $('rAppr').textContent = '–';
     $('rAge').textContent = `${fmtTime(R.last.time)} (${Math.round((Date.now() / 1000 - R.last.time) / 60)} นาทีก่อน)`;
+    $('rGrow').textContent = R.trend ? { grow: 'กำลังใหญ่ขึ้น', decay: 'กำลังเล็กลง', steady: 'พอ ๆ เดิม' }[R.trend.state] : 'ฝนน้อยเกินจะบอกได้';
     $('rAgree').textContent = R.agree ? (R.agree.ok ? 'ตรงกัน' : `ไม่ตรง (ต่าง ${R.agree.angle}°)`) : (R.source === 'wind' ? 'ดูจากลมบนแทน' : 'ประเมินไม่ได้'); renderWindRow();
   }
   function buildPast() {
