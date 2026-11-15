@@ -1,22 +1,22 @@
 {
-  "generated": "2026-11-15T04:30:03.566Z",
+  "generated": "2026-11-15T05:00:28.841Z",
   "lat": 9.032759575862215,
   "lon": 98.94431140668654,
   "truth": "radar over the farm (any wet 10-min frame inside the 15-min slot)",
   "components": {
     "p": {
       "all": {
-        "n": 222,
+        "n": 223,
         "brier": 0.202,
-        "base_rate": 0.293,
-        "skill_vs_climatology": 0.024
+        "base_rate": 0.296,
+        "skill_vs_climatology": 0.031
       },
       "by_lead": {
         "0-30min": {
-          "n": 10,
-          "brier": 0.37,
-          "base_rate": 0.5,
-          "skill_vs_climatology": -0.481
+          "n": 11,
+          "brier": 0.348,
+          "base_rate": 0.545,
+          "skill_vs_climatology": -0.405
         },
         "30-60min": {
           "n": 7,
@@ -76,9 +76,9 @@
         },
         {
           "bin": "60-70%",
-          "n": 25,
+          "n": 26,
           "mean_forecast": 0.627,
-          "observed_freq": 0.84
+          "observed_freq": 0.846
         },
         {
           "bin": "70-80%",
@@ -102,17 +102,17 @@
     },
     "p_radar": {
       "all": {
-        "n": 43,
-        "brier": 0.356,
-        "base_rate": 0.279,
-        "skill_vs_climatology": -0.771
+        "n": 44,
+        "brier": 0.351,
+        "base_rate": 0.295,
+        "skill_vs_climatology": -0.687
       },
       "by_lead": {
         "0-30min": {
-          "n": 10,
-          "brier": 0.422,
-          "base_rate": 0.5,
-          "skill_vs_climatology": -0.688
+          "n": 11,
+          "brier": 0.395,
+          "base_rate": 0.545,
+          "skill_vs_climatology": -0.595
         },
         "30-60min": {
           "n": 7,
@@ -156,6 +156,12 @@
           "observed_freq": 1
         },
         {
+          "bin": "60-70%",
+          "n": 1,
+          "mean_forecast": 0.639,
+          "observed_freq": 1
+        },
+        {
           "bin": "80-90%",
           "n": 2,
           "mean_forecast": 0.867,
@@ -171,17 +177,17 @@
     },
     "p_model": {
       "all": {
-        "n": 222,
-        "brier": 0.214,
-        "base_rate": 0.293,
-        "skill_vs_climatology": -0.033
+        "n": 223,
+        "brier": 0.213,
+        "base_rate": 0.296,
+        "skill_vs_climatology": -0.024
       },
       "by_lead": {
         "0-30min": {
-          "n": 10,
-          "brier": 0.303,
-          "base_rate": 0.5,
-          "skill_vs_climatology": -0.213
+          "n": 11,
+          "brier": 0.284,
+          "base_rate": 0.545,
+          "skill_vs_climatology": -0.145
         },
         "30-60min": {
           "n": 7,
@@ -235,9 +241,9 @@
         },
         {
           "bin": "60-70%",
-          "n": 21,
-          "mean_forecast": 0.622,
-          "observed_freq": 0.952
+          "n": 22,
+          "mean_forecast": 0.625,
+          "observed_freq": 0.955
         },
         {
           "bin": "70-80%",
@@ -261,7 +267,7 @@
     }
   },
   "reports": {
-    "n": 11,
+    "n": 12,
     "observed_rain": 4,
     "by_intensity": {
       "light": 0,
@@ -269,10 +275,10 @@
       "heavy": 1
     },
     "forecast_latest": {
-      "n": 7,
+      "n": 8,
       "hit": 2,
       "miss": 1,
-      "false_alarm": 3,
+      "false_alarm": 4,
       "correct_dry": 1
     },
     "forecast_1to2h_ahead": {
@@ -287,7 +293,7 @@
     "note": "threshold 50%; miss = said dry but it rained, false_alarm = said rain but it stayed dry"
   },
   "last_run": {
-    "at": "2026-11-15T04:29:59Z",
+    "at": "2026-11-15T05:00:25Z",
     "radar_frames": 12,
     "models_ok": 9,
     "motion": "radar"
