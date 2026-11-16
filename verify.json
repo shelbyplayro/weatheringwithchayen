@@ -1,15 +1,15 @@
 {
-  "generated": "2026-11-15T23:31:12.706Z",
+  "generated": "2026-11-16T03:07:31.139Z",
   "lat": 9.032759575862215,
   "lon": 98.94431140668654,
   "truth": "radar over the farm (any wet 10-min frame inside the 15-min slot)",
   "components": {
     "p": {
       "all": {
-        "n": 240,
-        "brier": 0.19,
-        "base_rate": 0.304,
-        "skill_vs_climatology": 0.103
+        "n": 249,
+        "brier": 0.183,
+        "base_rate": 0.293,
+        "skill_vs_climatology": 0.116
       },
       "by_lead": {
         "0-30min": {
@@ -25,24 +25,24 @@
           "skill_vs_climatology": 0.19
         },
         "60-120min": {
-          "n": 28,
-          "brier": 0.192,
-          "base_rate": 0.214,
-          "skill_vs_climatology": -0.14
+          "n": 31,
+          "brier": 0.174,
+          "base_rate": 0.194,
+          "skill_vs_climatology": -0.113
         },
         "120-240min": {
-          "n": 188,
-          "brier": 0.182,
-          "base_rate": 0.282,
-          "skill_vs_climatology": 0.102
+          "n": 194,
+          "brier": 0.176,
+          "base_rate": 0.273,
+          "skill_vs_climatology": 0.112
         }
       },
       "reliability": [
         {
           "bin": "0-10%",
-          "n": 60,
-          "mean_forecast": 0.052,
-          "observed_freq": 0.033
+          "n": 69,
+          "mean_forecast": 0.054,
+          "observed_freq": 0.029
         },
         {
           "bin": "10-20%",
@@ -102,10 +102,10 @@
     },
     "p_radar": {
       "all": {
-        "n": 52,
-        "brier": 0.308,
-        "base_rate": 0.385,
-        "skill_vs_climatology": -0.3
+        "n": 55,
+        "brier": 0.291,
+        "base_rate": 0.364,
+        "skill_vs_climatology": -0.257
       },
       "by_lead": {
         "0-30min": {
@@ -121,10 +121,10 @@
           "skill_vs_climatology": -0.048
         },
         "60-120min": {
-          "n": 28,
-          "brier": 0.317,
-          "base_rate": 0.214,
-          "skill_vs_climatology": -0.883
+          "n": 31,
+          "brier": 0.286,
+          "base_rate": 0.194,
+          "skill_vs_climatology": -0.835
         },
         "120-240min": {
           "n": 0
@@ -133,9 +133,9 @@
       "reliability": [
         {
           "bin": "0-10%",
-          "n": 23,
+          "n": 26,
           "mean_forecast": 0,
-          "observed_freq": 0.174
+          "observed_freq": 0.154
         },
         {
           "bin": "30-40%",
@@ -183,10 +183,10 @@
     },
     "p_model": {
       "all": {
-        "n": 240,
-        "brier": 0.2,
-        "base_rate": 0.304,
-        "skill_vs_climatology": 0.053
+        "n": 249,
+        "brier": 0.193,
+        "base_rate": 0.293,
+        "skill_vs_climatology": 0.067
       },
       "by_lead": {
         "0-30min": {
@@ -202,24 +202,24 @@
           "skill_vs_climatology": -0.299
         },
         "60-120min": {
-          "n": 28,
-          "brier": 0.263,
-          "base_rate": 0.214,
-          "skill_vs_climatology": -0.562
+          "n": 31,
+          "brier": 0.238,
+          "base_rate": 0.194,
+          "skill_vs_climatology": -0.524
         },
         "120-240min": {
-          "n": 188,
-          "brier": 0.182,
-          "base_rate": 0.282,
-          "skill_vs_climatology": 0.102
+          "n": 194,
+          "brier": 0.176,
+          "base_rate": 0.273,
+          "skill_vs_climatology": 0.112
         }
       },
       "reliability": [
         {
           "bin": "0-10%",
-          "n": 59,
-          "mean_forecast": 0.052,
-          "observed_freq": 0.034
+          "n": 68,
+          "mean_forecast": 0.054,
+          "observed_freq": 0.029
         },
         {
           "bin": "10-20%",
@@ -299,9 +299,9 @@
     "note": "threshold 50%; miss = said dry but it rained, false_alarm = said rain but it stayed dry"
   },
   "last_run": {
-    "at": "2026-11-15T23:31:09Z",
+    "at": "2026-11-16T03:06:59Z",
     "radar_frames": 12,
-    "models_ok": 9,
-    "motion": "wind"
+    "models_ok": 3,
+    "motion": "none"
   }
 }
