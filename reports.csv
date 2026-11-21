@@ -14,4 +14,4 @@ issue,at,observed,intensity,p_latest,p_1to2h_ahead,radar_wet_pm10min,app_p_now,a
 13,2026-11-15T05:25:08.093Z,dry,,0.764,,1,99,rain
 14,2026-11-20T05:41:35.781Z,dry,,,,1,28,rain
 15,2026-11-20T07:58:19.343Z,dry,,0.466,,1,95,rain
-16,2026-11-21T04:34:17.883Z,rain,moderate,,,0,56,dry
+16,2026-11-21T04:34:17.883Z,rain,moderate,,,1,56,dry
