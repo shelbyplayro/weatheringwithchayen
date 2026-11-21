@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <!-- version: bump both lines on every release; the page compares its own number with the one on the server -->
-<meta name="app-version" content="2.4.0">
-<meta name="app-notes" content="ดูฝนที่ก่อตัวขึ้นเองรอบสวน และอากาศอบอ้าวพร้อมก่อฝนไหม · แผนที่ฝนเปิดมาที่ภาพตอนนี้">
+<meta name="app-version" content="2.4.1">
+<meta name="app-notes" content="ปรับให้ใช้บน iPhone ง่ายขึ้น: ปุ่มกดง่ายขึ้น ตัวหนังสืออ่านชัดขึ้น แตะชั่วโมงแล้วเลื่อนขึ้นไปให้ดูเอง">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ฝนจะตกไหมชาเย็น</title>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -13,7 +13,9 @@
 <meta name="apple-mobile-web-app-title" content="ฝนจะตกไหมชาเย็น">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#f2f5f9">
+<meta name="theme-color" content="#f2f5f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#10151c" media="(prefers-color-scheme: dark)">
+<meta name="format-detection" content="telephone=no">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Mitr:wght@400;500;600&family=Itim&family=Anuphan:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -441,6 +443,44 @@ summary .chev{color:var(--muted);background:var(--surface2);border-radius:50%;pa
 .updbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .rbtn.go{background:var(--tea);color:#fff;border-color:transparent}
 .ver{font:500 .78rem var(--num);color:var(--muted)}
+/* ---- iPhone pass (2.4.1): readable contrast, 44px taps, no grey flash, no text inflation ---- */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{-webkit-tap-highlight-color:transparent}
+button,summary,a,input{touch-action:manipulation}
+.chaiyen-stage .chaiyen-art{-webkit-touch-callout:none}
+:root[data-style="clean"]{--muted:#5b6774}
+:root{--orangefg:#a4530a;--tea-deep:#b25a0d}
+@media (prefers-color-scheme:dark){:root[data-style="clean"]{--muted:#97a3b0}}
+.hero[data-mood="maybe"]{--tone:#c4630f;--tonefg:var(--orangefg)}
+.stat.maybe,.stat.wind{--pillfg:var(--orangefg)}
+.friend .mood.maybe{color:var(--orangefg)}
+.hour.maybe .p,.quarters .q.maybe b{color:var(--orangefg)}
+.seg button[aria-pressed="true"],.rbtn.go,.savebtn{background:var(--tea-deep)}
+@media (prefers-color-scheme:dark){
+  .friend .mood.dry{color:#8fd49a} .friend .mood.maybe{color:#ffb876} .friend .mood.soon,.friend .mood.wet{color:#9cc8ff}
+  .stat.maybe,.stat.wind{--pillfg:#ffb876} .hour.maybe .p,.quarters .q.maybe b{color:#ffb876}}
+/* taps: everything at least 44px tall, pressed state you can feel */
+.seg button{min-height:44px}
+.maphead{flex-wrap:wrap;row-gap:8px}
+.mapbox .seg{background:color-mix(in srgb,var(--surface) 95%,transparent)}
+.mapbox .seg button{min-height:40px;padding:6px 14px;font-size:.8rem}
+.mapbox .seg button:not([aria-pressed="true"]){color:var(--fg)}
+.scrub input{height:44px;margin:0}
+.backall{min-height:44px}
+footer{line-height:2.2}
+footer a{display:inline-block;padding:4px 2px}
+.seg button,.rbtn,summary,.backall,.iconbtn{transition:transform .12s ease,background-color .15s ease,opacity .15s ease}
+.seg button:active,.backall:active{transform:scale(.96)}
+summary:active{opacity:.7}
+@media (hover:hover){.rbtn:hover,.seg button:not([aria-pressed="true"]):hover{filter:brightness(.97)}}
+/* small print never below 12px */
+.htag{font-size:.8rem}
+.updated{font-size:.78rem}
+.ticks{font-size:.75rem}
+footer{font-size:.75rem}
+.hero{scroll-margin-top:calc(env(safe-area-inset-top,0px) + 12px)}
+.stat i{white-space:nowrap}
+@media (max-width:360px){.stat{padding:4px 11px 5px}.stat b{font-size:1.45rem}}
 </style>
 </head>
 <body>
@@ -1233,7 +1273,7 @@ if (typeof window !== 'undefined') (() => {
       d.className = 'hour ' + lv; d.setAttribute('aria-pressed', state.sel === h ? 'true' : 'false');
       d.setAttribute('aria-label', `ดูช่วง ${qs4[0].label}–${end} โอกาสฝนสูงสุด ${p == null ? 'ไม่มีข้อมูล' : Math.round(p * 100) + '% ช่วง ' + peak}`);
       d.innerHTML = `<span class="t">${qs4[0].label}</span>${iconSVG(lv, isNight(qs4[0].tSec))}<span class="p">${p == null ? '–' : Math.round(p * 100) + '<small>%</small>'}</span><span class="meter"><i style="width:${p == null ? 0 : Math.max(8, Math.round(p * 100))}%"></i></span>`;
-      d.addEventListener('click', () => (state.sel === h ? showOverview() : showHour(h)));
+      d.addEventListener('click', () => { state.sel === h ? showOverview() : showHour(h); heroIntoView(); });
       box.appendChild(d);
     }
   }
@@ -1247,6 +1287,11 @@ if (typeof window !== 'undefined') (() => {
     el.innerHTML = `<span class="stat ${level(p)}"><b>${m[1]}</b><i>%</i></span><span class="cap">โอกาสฝน</span>` + (cap2 ? `<span class="cap">${cap2}</span>` : '');
   }
   function markChips() { document.querySelectorAll('#hours .hour').forEach((b, i) => b.setAttribute('aria-pressed', state.sel === i ? 'true' : 'false')); }
+  // on a phone the hour chips sit below the answer card; bring the card back so the change is seen
+  function heroIntoView() {
+    const hero = document.querySelector('.hero'), r = hero.getBoundingClientRect();
+    if (r.top < 0 || r.top > innerHeight * 0.5) hero.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+  }
   function showHour(h) {
     const H = state.hours[h]; if (!H) return;
     state.sel = h; markChips();
