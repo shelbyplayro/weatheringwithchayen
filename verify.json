@@ -1,22 +1,22 @@
 {
-  "generated": "2026-11-28T09:27:21.433Z",
+  "generated": "2026-11-28T10:13:21.321Z",
   "lat": 9.032759575862215,
   "lon": 98.94431140668654,
   "truth": "radar over the farm (any wet 10-min frame inside the 15-min slot)",
   "components": {
     "p": {
       "all": {
-        "n": 330,
-        "brier": 0.19,
-        "base_rate": 0.282,
-        "skill_vs_climatology": 0.063
+        "n": 332,
+        "brier": 0.189,
+        "base_rate": 0.283,
+        "skill_vs_climatology": 0.07
       },
       "by_lead": {
         "0-30min": {
-          "n": 21,
-          "brier": 0.241,
-          "base_rate": 0.667,
-          "skill_vs_climatology": -0.085
+          "n": 23,
+          "brier": 0.223,
+          "base_rate": 0.652,
+          "skill_vs_climatology": 0.017
         },
         "30-60min": {
           "n": 17,
@@ -46,9 +46,9 @@
         },
         {
           "bin": "10-20%",
-          "n": 50,
-          "mean_forecast": 0.137,
-          "observed_freq": 0.14
+          "n": 51,
+          "mean_forecast": 0.136,
+          "observed_freq": 0.137
         },
         {
           "bin": "20-30%",
@@ -82,9 +82,9 @@
         },
         {
           "bin": "70-80%",
-          "n": 16,
-          "mean_forecast": 0.742,
-          "observed_freq": 0.5
+          "n": 17,
+          "mean_forecast": 0.743,
+          "observed_freq": 0.529
         },
         {
           "bin": "80-90%",
@@ -102,17 +102,17 @@
     },
     "p_radar": {
       "all": {
-        "n": 81,
-        "brier": 0.288,
-        "base_rate": 0.42,
-        "skill_vs_climatology": -0.182
+        "n": 83,
+        "brier": 0.281,
+        "base_rate": 0.422,
+        "skill_vs_climatology": -0.154
       },
       "by_lead": {
         "0-30min": {
-          "n": 21,
-          "brier": 0.269,
-          "base_rate": 0.667,
-          "skill_vs_climatology": -0.209
+          "n": 23,
+          "brier": 0.248,
+          "base_rate": 0.652,
+          "skill_vs_climatology": -0.092
         },
         "30-60min": {
           "n": 17,
@@ -136,9 +136,9 @@
       "reliability": [
         {
           "bin": "0-10%",
-          "n": 34,
-          "mean_forecast": 0,
-          "observed_freq": 0.176
+          "n": 35,
+          "mean_forecast": 0.002,
+          "observed_freq": 0.171
         },
         {
           "bin": "10-20%",
@@ -178,9 +178,9 @@
         },
         {
           "bin": "70-80%",
-          "n": 3,
-          "mean_forecast": 0.768,
-          "observed_freq": 0.667
+          "n": 4,
+          "mean_forecast": 0.771,
+          "observed_freq": 0.75
         },
         {
           "bin": "80-90%",
@@ -198,17 +198,17 @@
     },
     "p_model": {
       "all": {
-        "n": 330,
-        "brier": 0.201,
-        "base_rate": 0.282,
+        "n": 332,
+        "brier": 0.202,
+        "base_rate": 0.283,
         "skill_vs_climatology": 0.006
       },
       "by_lead": {
         "0-30min": {
-          "n": 21,
-          "brier": 0.248,
-          "base_rate": 0.667,
-          "skill_vs_climatology": -0.114
+          "n": 23,
+          "brier": 0.251,
+          "base_rate": 0.652,
+          "skill_vs_climatology": -0.105
         },
         "30-60min": {
           "n": 17,
@@ -250,9 +250,9 @@
         },
         {
           "bin": "30-40%",
-          "n": 23,
-          "mean_forecast": 0.358,
-          "observed_freq": 0.304
+          "n": 25,
+          "mean_forecast": 0.355,
+          "observed_freq": 0.32
         },
         {
           "bin": "40-50%",
@@ -320,21 +320,21 @@
     "note": "threshold 50%; miss = said dry but it rained, false_alarm = said rain but it stayed dry"
   },
   "last_run": {
-    "at": "2026-11-28T09:26:49Z",
+    "at": "2026-11-28T10:13:18Z",
     "radar_frames": 12,
-    "models_ok": 3,
+    "models_ok": 9,
     "motion": "radar",
     "snapshot": true
   },
   "coverage": {
     "last_24h": {
-      "runs": 3,
-      "radar_frames": 36,
+      "runs": 4,
+      "radar_frames": 41,
       "radar_frames_expected": 144,
-      "radar_share": 0.25
+      "radar_share": 0.285
     },
     "last_7d": {
-      "runs": 23,
+      "runs": 24,
       "radar_frames": 262,
       "radar_frames_expected": 1008,
       "radar_share": 0.26
