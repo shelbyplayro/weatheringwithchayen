@@ -9,6 +9,7 @@
 
 ## ไฟล์
 - `index.html` (~1.6 MB) ทั้งแอปอยู่ไฟล์เดียว รูปสติกเกอร์ฝังเป็น data URI (webp) **อย่าเปิดอ่านทั้งไฟล์** ใช้ grep/sed เฉพาะช่วง
+- Logger timer (2026-11-28): GitHub's schedule only fired every ~6 h, so cron-job.org calls `workflow_dispatch` every 15 min with a fine-grained token (Actions read/write, this repo only). Steps in README "Logger timer". `log.mjs` skips forecast/wind/trend/popup rows if the previous forecast is <5 min old; `verify.json` → `coverage` shows how complete the log is. Data before 2026-11-28 covers only ~1/3 of radar frames.
 - `tools/log.mjs` ตัวเก็บ log รันโดย `.github/workflows/chayen-log.yml` ดึง Core จาก index.html โดยตัดข้อความระหว่าง `/* ===== Core` กับ `/* ===== App` แก้ Core แล้วมีผลกับ logger ด้วย
 - `README.md` อธิบายไฟล์ข้อมูล (forecasts.csv, observed.csv, wind.csv, trend.csv, reports.csv, verify.json) และกติกาต่าง ๆ
 - ไอคอน/manifest ยังเป็นชาเย็นเวกเตอร์รุ่นแรก

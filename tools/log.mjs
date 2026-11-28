@@ -21,6 +21,7 @@ const { Core, Past } = new Function('module', coreSrc.replace(/if \(typeof modul
 const LAT = +(process.env.LAT || html.match(/parseFloat\(qs\.get\('lat'\)\) \|\| ([\d.]+)/)[1]);
 const LON = +(process.env.LON || html.match(/parseFloat\(qs\.get\('lon'\)\) \|\| ([\d.]+)/)[1]);
 
+const MIN_GAP_MIN = 5;
 const W = 768, H = 768;
 const P = Core.lonLatToPx(LON, LAT);
 const tileX0 = Math.floor(P.x / 256) - 1, tileY0 = Math.floor(P.y / 256) - 1;
@@ -152,6 +153,17 @@ function verify(fc, obs) {
 }
 
 /* ---------- reports from the app (GitHub issues titled [รายงานฝน]) ---------- */
+// How complete the log is: runs that wrote a forecast, and radar frames kept out of the 6 per hour RainViewer makes.
+function coverage(fc, obs, now) {
+  const win = h => {
+    const from = now - h * 3600;
+    const runs = new Set(fc.map(f => f.issued).filter(t => Date.parse(t) / 1000 > from)).size;
+    const frames = obs.filter(o => Date.parse(o.frame_time) / 1000 > from).length;
+    return { runs, radar_frames: frames, radar_frames_expected: h * 6, radar_share: r3(Math.min(1, frames / (h * 6))) };
+  };
+  return { last_24h: win(24), last_7d: win(24 * 7) };
+}
+
 async function loadReports() {
   const repo = process.env.GITHUB_REPOSITORY, token = process.env.GITHUB_TOKEN;
   if (!repo || !token) return null;
@@ -208,6 +220,12 @@ export async function run() {
   const models = modR.status === 'fulfilled' ? modR.value : null;
   const radar = analyseRadar(frames, models);
 
+  // Runs are started from outside every ~15 min (GitHub's own schedule only fires every few hours), plus on new reports
+  // and as a backup schedule. If two runs land within MIN_GAP_MIN, the second one skips the snapshot rows (1–1d) so
+  // forecasts.csv does not get near-duplicate issues; it still records observations and rescores.
+  const prevIssued = readCSV(path.join(DATA, 'forecasts.csv')).reduce((m, f) => Math.max(m, Date.parse(f.issued) / 1000 || 0), 0);
+  const snapshot = now - prevIssued >= MIN_GAP_MIN * 60;
+  if (snapshot) {
   // 1. forecast rows
   const start = Math.ceil(now / 900) * 900, radarAge = radar ? (now - radar.last.time) / 60 : 0, slots = [];
   for (let k = 0; k < 16; k++) {
@@ -243,6 +261,7 @@ export async function run() {
     cape: air && air.cape != null ? Math.round(air.cape) : '', lifted_index: air && air.li != null ? r3(air.li) : '',
     temp_c: air && air.temp != null ? r3(air.temp) : '', dew_c: air && air.dew != null ? r3(air.dew) : '', ready: air ? air.level : '',
     p_popup_60: pop ? r3(Core.popupProb(pop, 60, air)) : '' }]);
+  }
 
   // 2. observations (one row per radar frame, no duplicates)
   const obsFile = path.join(DATA, 'observed.csv');
@@ -261,7 +280,8 @@ export async function run() {
     fs.writeFileSync(path.join(DATA, 'reports.csv'), head.join(',') + '\n' + sr.rows.map(r => head.map(h => r[h] ?? '').join(',')).join('\n') + (sr.rows.length ? '\n' : ''));
     v.reports = sr.summary;
   }
-  v.last_run = { at: iso(now), radar_frames: frames.length, models_ok: models ? models.ens.length + models.det.length : 0, motion: radar ? radar.source : 'none' };
+  v.last_run = { at: iso(now), radar_frames: frames.length, models_ok: models ? models.ens.length + models.det.length : 0, motion: radar ? radar.source : 'none', snapshot };
+  v.coverage = coverage(readCSV(path.join(DATA, 'forecasts.csv')), readCSV(obsFile), now);
   fs.writeFileSync(path.join(DATA, 'verify.json'), JSON.stringify(v, null, 2) + '\n');
   console.log(`run ${iso(now)} · frames ${frames.length} · models ${v.last_run.models_ok} · verified pairs ${v.components.p.all.n}`);
   return v;

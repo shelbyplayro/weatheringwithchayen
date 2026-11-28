@@ -1,6 +1,10 @@
-# ทุก 20 นาที: บันทึกพยากรณ์ บันทึกฝนที่เรดาร์เห็นตรงสวน แล้วคิดคะแนนความแม่น
-# รวมรายงาน "ฝนตก/ไม่ตก" ที่ส่งจากปุ่มในแอป (issue ชื่อขึ้นต้น [รายงานฝน]) ไปคิดคะแนนด้วย
-# ผลอยู่ใน branch "data" (forecasts.csv, observed.csv, reports.csv, verify.json) แยกจาก main เพื่อไม่ให้หน้าเว็บ build ใหม่ทุกครั้ง
+# Every ~15 min: log the forecast, log whether the radar saw rain over the farm, then score accuracy.
+# Also scores the "rain / no rain" reports sent from the app's buttons (issues titled [รายงานฝน]).
+# Results live on the "data" branch (forecasts.csv, observed.csv, reports.csv, verify.json), apart from main so the site doesn't rebuild every run.
+#
+# Who starts it: GitHub's own schedule below only fires every ~6 h in practice, so an outside timer (cron-job.org)
+# calls the workflow_dispatch API every 15 min. The schedule stays as a backup. Setup steps: README.md, "Logger timer".
+# log.mjs skips the forecast snapshot if another run wrote one less than 5 min ago, so overlapping triggers are harmless.
 name: chayen-log
 
 on:

@@ -37,7 +37,7 @@ Weather data by [RainViewer](https://www.rainviewer.com) · [Open-Meteo](https:/
 
 ## บันทึกความแม่นยำอัตโนมัติ
 
-`.github/workflows/chayen-log.yml` รันทุก 20 นาทีบน GitHub Actions เรียก `tools/log.mjs` ซึ่งใช้สูตรเดียวกับหน้าเว็บ (อ่านจาก `index.html` โดยตรง) แล้วเขียนผลลง branch `data`:
+`.github/workflows/chayen-log.yml` runs on GitHub Actions about every 15 min (started by an outside timer, see "Logger timer" below) and calls `tools/log.mjs` ซึ่งใช้สูตรเดียวกับหน้าเว็บ (อ่านจาก `index.html` โดยตรง) แล้วเขียนผลลง branch `data`:
 
 | ไฟล์ | เนื้อหา |
 |---|---|
@@ -49,6 +49,24 @@ Weather data by [RainViewer](https://www.rainviewer.com) · [Open-Meteo](https:/
 | `verify.json` | Brier score, skill เทียบค่าเฉลี่ย, แยกตามระยะเวลาล่วงหน้า, ตาราง reliability และสรุปผลเทียบกับรายงานจริง (`reports`) |
 
 ค่าจริงที่ใช้ตัดสินคือเรดาร์ตรงสวน: ช่วง 15 นาทีนับว่า "ฝนตก" ถ้ามีภาพเรดาร์อย่างน้อยหนึ่งภาพในช่วงนั้นเห็นฝน
+
+`verify.json` also has `coverage` (runs and radar frames kept in the last 24 h and 7 days; `radar_share` should be close to 1) and `last_run.snapshot` (false when the run skipped the forecast rows because another run wrote them less than 5 min earlier).
+
+### Logger timer
+
+GitHub's own `schedule` for this repo fires only every ~6 h in practice (Nov 2026: 108 runs in 26 days instead of ~1,900), so only about a third of radar frames got logged. An outside timer now calls the workflow every 15 min; the `schedule` stays as a backup.
+
+Setup (once, by the repo owner):
+1. GitHub → Settings → Developer settings → Fine-grained personal access tokens → Generate new token. Repository access: only `shelbyplayro/weatheringwithchayen`. Permissions: **Actions: Read and write** (nothing else). Pick an expiry and note it, the timer stops working when the token expires.
+2. cron-job.org (free account) → Create cronjob:
+   - URL: `https://api.github.com/repos/shelbyplayro/weatheringwithchayen/actions/workflows/chayen-log.yml/dispatches`
+   - Schedule: every 15 minutes
+   - Advanced → Request method: `POST`
+   - Headers: `Accept: application/vnd.github+json`, `Authorization: Bearer <token>`, `X-GitHub-Api-Version: 2022-11-28`
+   - Request body: `{"ref":"main"}`
+3. Use "Test run": GitHub answers `204`, and a `workflow_dispatch` run shows up under Actions → chayen-log.
+
+Check it is working: `coverage.last_24h.radar_share` in `verify.json` on the `data` branch should reach ~1 within a day.
 
 ## ปุ่มแจ้งสถานการณ์จริง
 
